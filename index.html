@@ -108,6 +108,7 @@
 <a class="nav3" href="#np-10">10. rng = np.random.default_rng(42)</a>
 <a class="nav4" href="#np-10-1">为什么它是对象而不是函数</a>
 <a class="nav4" href="#np-10-2">常用取样方法</a>
+<a class="nav4" href="#np-10-2b">抽出来的东西对不对</a>
 <a class="nav4" href="#np-10-3">新旧 API 对照</a>
 </nav>
 
@@ -635,6 +636,50 @@ np.random.default_rng(7).random(3)    # → [0.62509547 0.8972138  0.77568569]</
 <p>旧写法 <code>np.random.seed(42)</code> 是给<b>全局</b>随机数发生器设种子，项目里任何地方调用 <code>np.random.rand()</code> 都受影响，两段代码互相干扰。新的 <code>default_rng()</code> 每次返回<b>独立</b>的发生器，各用各的，互不影响——这在大项目里是刚需。</p>
 
 <h4 id="np-10-2">常用取样方法（都用 rng.xxx）</h4>
+
+<p><b>先说清楚"一次调用抽几个"：</b>最后那个参数 <code>size</code> 就是个数——写 <code>3</code> 抽 3 个，写 <code>(2,3)</code> 抽 6 个并排成 2×3；<b>不给 size 就抽 1 个</b>（返回标量，不是数组）。不管抽几个，返回值永远是 <code>ndarray</code>。</p>
+<pre><code>rng = np.random.default_rng(0)
+
+rng.random(3)            # → [0.63696169 0.26978671 0.04097352]      float，[0,1)
+rng.random((2, 3))       # → [[0.0165 0.8133 0.9128]
+                         #    [0.6066 0.7295 0.5436]]                2 行 3 列
+
+rng.uniform(60, 420, 3)  # → [396.63 353.71  60.99]                  float，落在 [60,420]
+
+rng.normal(0, 1, 3)      # → [-2.325  -0.2188 -1.2459]              可负，钟形
+rng.normal(170, 8, 3)    # → [164.14 165.65 167.47]                 身高：均值 170、标准差 8
+
+rng.integers(1, 7, 5)    # → [1 2 3 3 3]                            整数，1~6（7 取不到）
+rng.integers(1, 6, 5, endpoint=True)   # → [1 1 1 1 5]              含 6
+
+a = np.array(["甲", "乙", "丙", "丁"])
+rng.choice(a, 2, replace=False)        # → ['丙' '乙']              不重复
+rng.choice(a, 6)                       # → ['丙' '丁' '乙' '乙' '丁' '丁']  有放回，会重复
+
+rng.permutation(10)      # → [1 2 5 8 0 4 7 9 3 6]                  0~9 打乱
+rng.permutation(a)       # → ['甲' '丁' '乙' '丙']                  打乱元素本身</code></pre>
+
+<table>
+<tr><th>方法</th><th>参数</th><th>返回</th><th>建模里用来抽什么</th></tr>
+<tr><td><code>random(size)</code></td><td>个数</td><td>float，[0,1)</td><td>概率、权重、0~1 的随机系数</td></tr>
+<tr><td><code>uniform(low, high, size)</code></td><td>下界、上界、个数</td><td>float，区间内等概率</td><td>只知道范围、不知道形状的参数（如使用年数 T~U(60,420)）</td></tr>
+<tr><td><code>normal(mean, sd, size)</code></td><td>均值、标准差、个数</td><td>float，钟形</td><td>测量误差、读数抖动</td></tr>
+<tr><td><code>integers(low, high, size)</code></td><td>下界、上界（不含）、个数</td><td>int</td><td>计数、编号、掷骰子</td></tr>
+<tr><td><code>choice(a, size, replace)</code></td><td>候选数组、个数、是否有放回</td><td>a 里的元素</td><td>抽样调查、划分训练/验证集</td></tr>
+<tr><td><code>permutation(n 或 a)</code></td><td>整数或数组</td><td>打乱后的副本</td><td>打乱顺序、bootstrap 重抽样</td></tr>
+</table>
+
+<h4 id="np-10-2b">抽出来的东西对不对：两个自检</h4>
+<pre><code>big = rng.uniform(60, 420, 200_000)
+big.mean()   # → 239.74   （理论值 (60+420)/2 = 240，差 0.26）
+big.min()    # → 60.0
+big.max()    # → 420.0
+
+d = rng.integers(1, 7, 600_000)
+(d == 1).mean()   # → 0.1666     六面各约 1/6 ≈ 0.1667
+(d == 6).mean()   # → 0.1674</code></pre>
+<div class="ok box"><b>自检思路：</b>抽完先看<b>均值、极值、频率</b>是否接近理论值。均匀分布均值应 ≈ (low+high)/2，极值应贴住两端；掷骰子六面频率应都 ≈ 1/6。对不上就说明参数写错了（比如把 <code>uniform(60, 420)</code> 写成了 <code>normal(60, 420)</code>）。</div>
+
 <table>
 <tr><th>写法</th><th>含义</th></tr>
 <tr><td><code>rng.random(3)</code></td><td>[0,1) 均匀小数</td></tr>

@@ -105,6 +105,7 @@
 <a class="nav4" href="#np-7-4">有 nan 时用 nanmean</a>
 <a class="nav3" href="#np-8">8. std 和 nan 到底是什么</a>
 <a class="nav3" href="#np-9">9. mask（布尔掩码）是什么</a>
+<a class="nav3" href="#np-10">10. rng = np.random.default_rng(42)</a>
 </nav>
 
 <h2 id="env">一、环境：装一次，以后都用它</h2>
@@ -595,6 +596,45 @@ type(mask)  # → numpy.ndarray</code></pre>
 ① 不能用 <code>and</code> / <code>or</code>，会报 <code>ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()</code>；必须用 <code>&amp;</code> <code>|</code>，并且<b>每个比较都加括号</b>：<code>(x &gt; 3) &amp; (x &lt; 7)</code>。<br>
 ② <code>x[mask]</code> 选出的是<b>复制</b>，改它不会改 <code>x</code>；要改原件得写成赋值形式 <code>x[mask] = 0</code>。<br>
 ③ <code>mask</code> 必须和 <code>x</code> 形状一致，否则报 <code>IndexError: boolean index did not match indexed array</code>。
+</div>
+
+<h3 id="np-10">10. rng = np.random.default_rng(42) 是什么</h3>
+<p>这一行做了两件事：<b>造一个随机数发生器对象</b>，并给它一个<b>种子（seed）</b>。之后所有随机抽样都从这个对象上取。</p>
+<pre><code>rng = np.random.default_rng(42)
+type(rng)          # → numpy.random.Generator   （不是函数的返回值，是一个对象）
+
+rng.random(3)      # → [0.77395605 0.43887844 0.85859792]   [0,1) 均匀小数
+rng.random(3)      # → [0.69736803 0.09417735 0.97562235]   ← 继续取，值变了
+
+np.random.default_rng(42).random(3)   # → [0.77395605 0.43887844 0.85859792]
+np.random.default_rng(7).random(3)    # → [0.62509547 0.8972138  0.77568569]</code></pre>
+<div class="ok box"><b>种子决定"整条序列"，不是"每个数"。</b>种子相同 ⇒ 造出来的发生器吐出<b>完全一样的一串</b>数；种子不同 ⇒ 完全不同的串。所以写论文、调试、给别人复现时，<b>必须写死种子</b>。</div>
+
+<h4>为什么它是个对象而不是一个函数</h4>
+<p>旧写法 <code>np.random.seed(42)</code> 是给<b>全局</b>随机数发生器设种子，项目里任何地方调用 <code>np.random.rand()</code> 都受影响，两段代码互相干扰。新的 <code>default_rng()</code> 每次返回<b>独立</b>的发生器，各用各的，互不影响——这在大项目里是刚需。</p>
+
+<h4>常用取样方法（都用 rng.xxx）</h4>
+<table>
+<tr><th>写法</th><th>含义</th></tr>
+<tr><td><code>rng.random(3)</code></td><td>[0,1) 均匀小数</td></tr>
+<tr><td><code>rng.uniform(60, 420, 3)</code></td><td>区间 [60,420] 上的均匀分布</td></tr>
+<tr><td><code>rng.normal(0, 1, 3)</code></td><td>正态分布（均值 0、标准差 1）</td></tr>
+<tr><td><code>rng.integers(1, 7, 5)</code></td><td>整数 [1,7)，即掷骰子</td></tr>
+<tr><td><code>rng.choice(a, size, replace=False)</code></td><td>从数组里抽（可设为不重复）</td></tr>
+<tr><td><code>rng.permutation(10)</code></td><td>打乱 0~9 的顺序</td></tr>
+</table>
+
+<h4>新旧 API 对照（老代码里见到的是左边）</h4>
+<table>
+<tr><th>旧写法（全局）</th><th>新写法（对象）</th></tr>
+<tr><td><code>np.random.seed(42)</code></td><td><code>rng = np.random.default_rng(42)</code></td></tr>
+<tr><td><code>np.random.rand(3)</code></td><td><code>rng.random(3)</code></td></tr>
+<tr><td><code>np.random.normal(0,1,3)</code></td><td><code>rng.normal(0, 1, 3)</code></td></tr>
+<tr><td><code>np.random.randint(1,7,5)</code></td><td><code>rng.integers(1, 7, 5)</code></td></tr>
+</table>
+<div class="warn box"><b>两个坑：</b><br>
+① 种子一样但<b>调用次数/顺序不同</b>，拿到的数也不同——序列是"流式"的，不是按下标查表。<br>
+② 同一个 rng 连调两次 <code>random(3)</code> 得到的两组数<b>不一样</b>（见上面输出）；要每次重来，就重新 <code>default_rng(42)</code>。
 </div>
 
 <p class="meta" style="margin-top:30px">

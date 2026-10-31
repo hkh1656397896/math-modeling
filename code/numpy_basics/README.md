@@ -1,13 +1,24 @@
-﻿# numpy 最小集（5 课 · 25 题）
+# numpy 最小集（5 课 · 25 题）
 
 目标：三天内把 numpy 用到"看得懂讲义二 §5 代码"的程度。**不追求全面**，
 只学数模真正用到的 20%：数组、切片、向量化、随机、统计。
 
-## 怎么跑
+## 先看第 0 课（不用填空）
 
 ```
-cd C:\Users\Lenovo\Desktop\Python作业\数模练习\numpy_basics
-..\.venv\Scripts\python.exe run_all.py
+cd C:\Users\Lenovo\Desktop\数学建模\code\numpy_basics
+C:\Users\Lenovo\Desktop\Python作业\数模练习\.venv\Scripts\python.exe 00_warmup.py
+```
+
+`00_warmup.py` 是**全写好的抄写层**：12 节，每节末尾有「试着改…」，改一处再跑一次，看输出怎么变。
+
+`00_warmup_输出.txt` 是它**真实跑出来的完整输出**——跑完对着这个文件看，就知道自己看到的是不是对的。
+
+## 再做五课（25 题）
+
+```
+cd C:\Users\Lenovo\Desktop\数学建模\code\numpy_basics
+C:\Users\Lenovo\Desktop\Python作业\数模练习\.venv\Scripts\python.exe run_all.py
 ```
 
 一题一题做：把 `todo("...")` 换成真正的代码，再跑一次。三种反馈：

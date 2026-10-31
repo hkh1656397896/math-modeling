@@ -602,6 +602,24 @@ type(mask)  # → numpy.ndarray</code></pre>
 </div>
 
 <h3 id="np-10">10. rng = np.random.default_rng(42) 是什么</h3>
+<p><b>逐字拆开看：</b></p>
+<table>
+<tr><th>片段</th><th>是什么</th><th>作用</th></tr>
+<tr><td><code>np</code></td><td>numpy 的别名</td><td>指向 numpy 这个包</td></tr>
+<tr><td><code>.random</code></td><td>numpy 下的子模块</td><td>所有随机数相关的函数都住在这里</td></tr>
+<tr><td><code>default_rng</code></td><td>函数名（default random number generator）</td><td><b>造一个随机数发生器对象</b>并返回它</td></tr>
+<tr><td><code>(42)</code></td><td>传给它的参数：种子 seed</td><td>决定发生器从哪个"起点"开始</td></tr>
+<tr><td><code>=</code></td><td>赋值</td><td>把造出来的对象绑到名字 <code>rng</code> 上，后面都用它</td></tr>
+</table>
+<pre><code>rng               # → Generator(PCG64)     ← 底层算法是 PCG64
+rng.bit_generator  # → &lt;numpy.random._pcg64.PCG64 object&gt;
+rng.bit_generator.state   # → {'bit_generator':'PCG64', 'state':{'state':…, 'inc':…}, …}</code></pre>
+<p><b>所以它不是"固定一个数"，而是"固定一条随机流"</b>：种子喂进去，算法把它展开成内部状态（PCG64 是 128 位），此后每调用一次 <code>rng.random()</code> 就<b>推进状态</b>并吐出一个数。<b>同种子 ⇒ 同起点 ⇒ 同一条序列</b>，不是查表，也不存在"随机数库"。</p>
+<div class="warn box"><b>三个常见误解：</b><br>
+① "固定种子 = 每次得到同一个随机数" —— 错。拿到的是<b>同一条序列的第一个数</b>，第二次调用就是序列的第二个数。<br>
+② "随机数是从一张表里抽的" —— 没有表。是<b>确定性算法</b>（PCG64）按状态算出来的，所以叫<b>伪</b>随机。<br>
+③ "不写种子也没关系" —— 不给种子时 numpy 用系统熵做种子，每次运行都不同（实测两次 <code>default_rng()</code> 结果不同），结果无法复现。</div>
+
 <p>这一行做了两件事：<b>造一个随机数发生器对象</b>，并给它一个<b>种子（seed）</b>。之后所有随机抽样都从这个对象上取。</p>
 <pre><code>rng = np.random.default_rng(42)
 type(rng)          # → numpy.random.Generator   （不是函数的返回值，是一个对象）

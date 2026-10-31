@@ -57,6 +57,7 @@
 <a href="#err">六、报错速查</a>
 <a href="#road">七、学习路线（7 天 / 5 阶段）</a>
 <a href="#todo">八、进度</a>
+<a href="#qa">九、语法问答（我问过的）</a>
 </nav>
 
 <h2 id="env">一、环境：装一次，以后都用它</h2>
@@ -251,6 +252,54 @@ counts, edges = np.histogram(x, bins=10)</code></pre>
 <li>☐ §5.3 蒙特卡洛</li>
 <li>☐ 真楼梯实测数据</li>
 </ul>
+
+<h2 id="qa">九、语法问答（我问过的）</h2>
+<p>这些都是我自己卡住过的地方，记下来省得再翻聊天记录。</p>
+
+<h3>1. <code>import numpy as np</code> 是什么句式</h3>
+<p>一句话 + 一个别名：把 <code>numpy</code> 这个工具箱搬进来，并给它起个短名字 <code>np</code>。名字在 import 那一刻就定下了，<strong>后面必须用这个短名</strong>。</p>
+<table>
+<tr><th>写法</th><th>后面怎么用</th><th>什么时候用</th></tr>
+<tr><td><code>import numpy</code></td><td><code>numpy.array(...)</code> 写全称</td><td>几乎不用</td></tr>
+<tr><td><code>import numpy as np</code></td><td><code>np.array(...)</code></td><td>默认写法，全世界都这么写</td></tr>
+<tr><td><code>from numpy import array</code></td><td><code>array(...)</code> 直接用</td><td>只要一两个函数时</td></tr>
+</table>
+<div class="bad box"><b>报错对照：</b><code>NameError: name 'numpy' is not defined</code> —— 写了 <code>as np</code> 却还在用 <code>numpy.</code>；<code>NameError: name 'np' is not defined</code> —— 忘了写 import 那一行。</div>
+<p><code>import math as m</code>、<code>import matplotlib.pyplot as plt</code> 全是同一个句式。别名只是自己起的外号，Python 不检查起得好不好。</p>
+
+<h3>2. <code>np.array([1,2,3])</code> 是什么，为什么“只能输入整体”</h3>
+<p>拆成三块看：<code>np</code> 是工具箱，<code>array</code> 是工具箱里的函数，<code>([1,2,3])</code> 是调用它并传参。<strong>参数只有一个——整个列表</strong>，不是三个数。</p>
+<pre><code>np.array([1, 2, 3])        # ✔ 一个列表 → 一个数组
+np.array(1, 2, 3)          # ✘ TypeError: array() takes from 1 to 2 positional arguments but 4 were given
+np.array([[1,2],[3,4]])    # ✔ 列表套列表 → 二维数组</code></pre>
+<div class="warn box">同一个 numpy 里，<b>参数含义并不统一</b>：<code>np.zeros(3)</code> 的 3 是“要几个”，<code>np.array([1,2,3])</code> 的列表是“数据本身”。写之前先想清楚：这个参数是<b>形状</b>还是<b>数据</b>。</div>
+<p>列表和数组的区别（这才是要转成数组的原因）：</p>
+<table>
+<tr><th>操作</th><th>列表 <code>[1,2,3]</code></th><th>数组 <code>np.array([1,2,3])</code></th></tr>
+<tr><td><code>* 2</code></td><td>复制一份：<code>[1,2,3,1,2,3]</code></td><td>逐元素：<code>[2 4 6]</code></td></tr>
+<tr><td><code>+ 1</code></td><td><b>报错</b> TypeError</td><td>逐元素：<code>[2 3 4]</code></td></tr>
+<tr><td><code>.shape</code> / <code>.dtype</code></td><td>没有</td><td>有：<code>(3,)</code> / <code>int64</code></td></tr>
+<tr><td>20 个元素逐个乘系数</td><td>要写 for</td><td>一行 <code>w * 0.8</code></td></tr>
+</table>
+
+<h3>3. <code>rng = np.random.default_rng(42)</code> 里的 42 是什么</h3>
+<p><code>default_rng(42)</code> 造出一台<strong>随机数生成器</strong>（一个对象），42 是种子：同一个种子 ⇒ 同一串随机数，结果可复现。之后调它身上的方法：<code>rng.normal(...)</code>、<code>rng.uniform(...)</code>、<code>rng.lognormal(...)</code>。</p>
+<div class="warn box">旧写法 <code>np.random.seed(42)</code> + <code>np.random.normal()</code> 还能跑，但新代码统一用 <code>default_rng</code>。</div>
+
+<h3>4. <code>line = lambda s="": ...</code> 这一长串</h3>
+<p>四样东西叠在一起，拆开就是普通话：</p>
+<pre><code>line = lambda s="": print("─" * 56) or print(s)</code></pre>
+<ul>
+<li><code>lambda</code>：匿名函数，等价于 <code>def line(s=""):</code></li>
+<li><code>s=""</code>：默认参数，不传就用空串</li>
+<li><code>"─" * 56</code>：字符串重复 56 次，画一条分隔线</li>
+<li><code>A or B</code>：短路求值；<code>print</code> 返回 <code>None</code>（假值）⇒ 总会接着执行 B</li>
+</ul>
+<p>正式代码里更该这么写，一眼能看懂：</p>
+<pre><code>def line(s=""):
+    print("─" * 56)
+    if s:
+        print(s)</code></pre>
 
 <p class="meta" style="margin-top:30px">
 这份笔记只记“我踩过的东西”，不抄教程。所有数字都能在 <code>code/</code> 里跑出来。

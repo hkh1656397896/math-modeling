@@ -349,6 +349,9 @@ a.reshape(4, 2)              # ✘ ValueError: cannot reshape array of size 6 in
 b[0, 0] = 99
 print(a)        # → [99  2  3  4  5  6]   原数组也变了！
 a.reshape(2,3).copy()   # 要独立副本就加 .copy()</code></pre>
+<div class="warn box"><b>常见误解：</b>写了 <code>b = a.reshape(2, 3)</code> 之后，<code>b</code> 是 2 行 3 列，但 <b><code>a</code> 自己一点没变</b>——形状还是 <code>(6,)</code>，<code>print(a)</code> 仍然是一行 6 个数（只是数据被改了）。<br>
+<b>形状是对象上的属性，数据才是共享的。</b><code>reshape</code> 返回一个<b>新对象</b>（新形状，指向同一块内存）：改 <code>b[0,0]</code> 改的是数据 ⇒ <code>a</code> 的数据跟着变（<code>np.shares_memory(a, b)</code> 为 <code>True</code>），但 <code>a</code> 的形状不会变。<br>
+想让 <code>a</code> 自己也变成 2 行 3 列，必须重新赋值：<code>a = a.reshape(2, 3)</code>。</div>
 
 <h3>3. <code>linspace</code> 和 <code>arange</code> 的分工</h3>
 <table>

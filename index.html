@@ -313,6 +313,16 @@ np.array([[1,2],[3,4]])    # ✔ 列表套列表 → 二维数组</code></pre>
 <tr><td><code>(3, 4)</code></td><td>3 × 4</td><td><b>二维</b>，3 行 4 列（一张表）</td></tr>
 <tr><td><code>(2, 3, 4)</code></td><td>2 × 3 × 4</td><td><b>三维</b>，2 张 3 行 4 列的表</td></tr>
 </table>
+<h4>怎么一眼看出几维</h4>
+<p><code>np.array(...)</code> 的维度就是<b>方括号嵌套的层数</b>：一层一维，两层两维。</p>
+<pre><code>np.array([1, 2, 3])               .shape   # → (3,)       1 层括号 = 一维
+np.array([[1, 2, 3], [4, 5, 6]])  .shape   # → (2, 3)     2 层 = 2 行 3 列
+np.array([[[1, 2], [3, 4]]])      .shape   # → (1, 2, 2)  3 层 = 三维</code></pre>
+<p>注意 <code>[[1, 2, 3]]</code> 只比 <code>[1, 2, 3]</code> 多一层括号，但它是 <code>(1, 3)</code>——<b>1 行 3 列</b>，不是一维。写 <code>np.array([[1, 2, 3],</code> 换行 <code>[4, 5, 6]])</code> 时，<b>每个内层方括号就是一行</b>。</p>
+<div class="warn box"><b>每行长度必须相同。</b><code>np.array([[1, 2], [3]])</code> 会直接报错：<br>
+<code>ValueError: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (2,) + inhomogeneous part.</code><br>
+老版本 numpy 不报错，而是造出 <code>dtype=object</code> 的"数组里装着列表"，之后所有运算都慢且不可预期——<b>看到 <code>dtype=object</code> 就说明数据没对齐</b>。</div>
+
 <div class="warn box"><code>(20,)</code> 里那个逗号不是笔误：Python 里 <code>(20)</code> 是整数 20，<code>(20,)</code> 才是「只有一个元素的元组」。shape 永远是元组，所以一维数组显示成 <code>(20,)</code>——看到末尾逗号就知道它是<b>一维</b>。</div>
 
 <p>三个容易混的属性：</p>

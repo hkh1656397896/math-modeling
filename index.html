@@ -484,6 +484,41 @@ b.std(ddof=1)   # → 1.2910      除以 n−1（样本标准差，与 Excel / p
 c.mean()        # → nan          一个 nan 传染全部
 np.nanmean(c)   # → 2.3333       跳过 nan 再求平均</code></pre>
 
+<h3>8. std 和 nan 到底是什么</h3>
+<p><b>std = 标准差（standard deviation）</b>：衡量「数据离平均值有多散」，单位与数据本身相同。它就是<b>方差的平方根</b>。</p>
+<pre><code>b = np.array([1., 2., 3., 4.])
+b.mean()          # → 2.5
+b - b.mean()      # → [-1.5 -0.5  0.5  1.5]      每个数与平均值的偏差
+(b - b.mean())**2 # → [2.25 0.25 0.25 2.25]      平方（正负抵消不了）
+((b-b.mean())**2).sum()   # → 5.0
+
+方差 = 5.0 / 4 = 1.25        → 标准差 = √1.25 = 1.1180   = b.std()
+方差 = 5.0 / 3 = 1.6667      → 标准差 = √1.6667 = 1.2910 = b.std(ddof=1)</code></pre>
+<p><code>ddof</code> 就是「分母减掉多少」：<code>方差 = Σ(x−x̄)² / (n − ddof)</code>。</p>
+<ul>
+<li><code>ddof=0</code>：除以 n。描述<b>手上这批数本身</b>有多散（总体标准差）。numpy 默认。</li>
+<li><code>ddof=1</code>：除以 n−1。用样本<b>估计总体</b>时的无偏估计（Bessel 校正）。pandas / Excel 默认。</li>
+</ul>
+<p>同一个数组，两种算法差 <code>√(n/(n−1))</code> 倍——<b>n 小的时候差得明显</b>（n=4 时差 15%）。实验测的数据一般用 <code>ddof=1</code>。</p>
+
+<p><b>nan = Not a Number</b>：浮点数里的「无效 / 缺失」标记。它不是异常，而是 IEEE 754 规定的一种值，会<b>静默传播</b>。</p>
+<pre><code>nan = float("nan")
+
+np.float64(0) / np.float64(0)    # → nan         （0 除 0）
+np.sqrt(np.float64(-1.0))        # → nan         （负数开方，只给警告）
+float("inf") - float("inf")      # → nan         （无穷减无穷）
+np.array([1, np.nan]).mean()     # → nan         （缺失值参与平均）
+
+nan == nan        # → False      ← 反直觉：它不等于自己
+nan != nan        # → True
+np.isnan(nan)     # → True       ← 唯一可靠的判断方式
+nan + 1           # → nan        ← 传染：任何运算结果还是 nan
+
+np.nanmean([1, 2, np.nan, 4])    # → 2.3333     跳过 nan 求平均
+np.nansum([1, 2, np.nan, 4])     # → 7.0
+np.nanstd([1, 2, np.nan, 4])     # → 1.2472     （ddof=0）</code></pre>
+<div class="warn box"><b>三条要记住：</b>① 判断缺失只能用 <code>np.isnan(x)</code>，写 <code>x == np.nan</code> 永远为 <code>False</code>；② <code>nan</code> 会传染，一步不查，最后结果全是 <code>nan</code>；③ 结果莫名变成 <code>nan</code> 时，先 <code>print(np.isnan(a).sum())</code> 数一下有几个，再回头看数据从哪来。</div>
+
 <p class="meta" style="margin-top:30px">
 这份笔记只记“我踩过的东西”，不抄教程。所有数字都能在 <code>code/</code> 里跑出来。
 </p>

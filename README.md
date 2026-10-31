@@ -2,7 +2,7 @@
 
 华中农业大学 · 从零开始的建模代码练习（numpy → 复现 → 真数据）
 
-📖 **在线笔记**：`index.html`（GitHub Pages 开启后即可手机访问）
+📖 **在线笔记**：<https://hkh1656397896.github.io/math-modeling/>（手机可直接添加到主屏）
 
 ## 里面有什么
 
@@ -33,3 +33,17 @@ C:\Users\Lenovo\Desktop\Python作业\数模练习\.venv\Scripts\python.exe run_a
 
 - `code/numpy_basics/05_two_ways.py` 里用的是**简化算例**（V ≈ 300 697 mm³），和讲义的标准算例（V = 50 894 mm³）不是同一组数据，别混。
 - 主脚本 `stair_model.py` 不在仓库里：它是学习目标，按讲义二 §5 一节一节自己打出来，而不是复制。
+
+## 更新约定
+
+- **这个仓库里的笔记内容**（`index.html`、`README.md`、`code/` 下的练习与文档），新建或修改后**直接提交推送**，不用每次问。
+- **别的东西**（作业代码、讲义、docx 等）仍然先确认再动，尤其是 `git push`。
+- 手动更新三行：
+
+```
+cd C:\Users\Lenovo\Desktop\数学建模
+git add -A && git commit -m "笔记：补 XXX"
+git push
+```
+
+推送后 GitHub Pages 会自动重建，一两分钟后线上就是新的。

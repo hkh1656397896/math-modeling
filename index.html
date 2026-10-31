@@ -106,6 +106,9 @@
 <a class="nav3" href="#np-8">8. std 和 nan 到底是什么</a>
 <a class="nav3" href="#np-9">9. mask（布尔掩码）是什么</a>
 <a class="nav3" href="#np-10">10. rng = np.random.default_rng(42)</a>
+<a class="nav4" href="#np-10-1">为什么它是对象而不是函数</a>
+<a class="nav4" href="#np-10-2">常用取样方法</a>
+<a class="nav4" href="#np-10-3">新旧 API 对照</a>
 </nav>
 
 <h2 id="env">一、环境：装一次，以后都用它</h2>
@@ -610,10 +613,10 @@ np.random.default_rng(42).random(3)   # → [0.77395605 0.43887844 0.85859792]
 np.random.default_rng(7).random(3)    # → [0.62509547 0.8972138  0.77568569]</code></pre>
 <div class="ok box"><b>种子决定"整条序列"，不是"每个数"。</b>种子相同 ⇒ 造出来的发生器吐出<b>完全一样的一串</b>数；种子不同 ⇒ 完全不同的串。所以写论文、调试、给别人复现时，<b>必须写死种子</b>。</div>
 
-<h4>为什么它是个对象而不是一个函数</h4>
+<h4 id="np-10-1">为什么它是个对象而不是一个函数</h4>
 <p>旧写法 <code>np.random.seed(42)</code> 是给<b>全局</b>随机数发生器设种子，项目里任何地方调用 <code>np.random.rand()</code> 都受影响，两段代码互相干扰。新的 <code>default_rng()</code> 每次返回<b>独立</b>的发生器，各用各的，互不影响——这在大项目里是刚需。</p>
 
-<h4>常用取样方法（都用 rng.xxx）</h4>
+<h4 id="np-10-2">常用取样方法（都用 rng.xxx）</h4>
 <table>
 <tr><th>写法</th><th>含义</th></tr>
 <tr><td><code>rng.random(3)</code></td><td>[0,1) 均匀小数</td></tr>
@@ -624,7 +627,7 @@ np.random.default_rng(7).random(3)    # → [0.62509547 0.8972138  0.77568569]</
 <tr><td><code>rng.permutation(10)</code></td><td>打乱 0~9 的顺序</td></tr>
 </table>
 
-<h4>新旧 API 对照（老代码里见到的是左边）</h4>
+<h4 id="np-10-3">新旧 API 对照（老代码里见到的是左边）</h4>
 <table>
 <tr><th>旧写法（全局）</th><th>新写法（对象）</th></tr>
 <tr><td><code>np.random.seed(42)</code></td><td><code>rng = np.random.default_rng(42)</code></td></tr>

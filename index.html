@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
@@ -36,29 +36,69 @@
   .ok{background:var(--ok-bg); border-left:4px solid var(--ok-line)}
   .bad{background:var(--bad-bg); border-left:4px solid var(--bad-line)}
   ul,ol{padding-left:22px} li{margin:4px 0}
-  nav{background:#f6f8fa; border:1px solid var(--line); border-radius:8px; padding:10px 14px; margin:14px 0}
+  html{scroll-behavior:smooth}
+  h2,h3,h4{scroll-margin-top:12px}
+  nav{max-height:58vh; overflow-y:auto; background:#f6f8fa; border:1px solid var(--line); border-radius:8px; padding:10px 14px; margin:14px 0}
   nav a{display:block; color:#0969da; text-decoration:none; padding:2px 0}
   a{color:#0969da}
+  nav a.nav2{font-weight:600; margin-top:6px}
+  nav a.nav3{padding-left:16px; font-size:14.5px; color:#3f6ea8}
+  nav a.nav4{padding-left:34px; font-size:13.5px; color:#5b6b7c}
+  nav a:hover{text-decoration:underline}
+  .back{text-align:right; font-size:13px; margin:10px 0 0}
+  .back a{color:#656d76; text-decoration:none}
   .tag{display:inline-block; background:#eef2f7; border-radius:4px; padding:0 6px; font-size:12.5px; color:var(--muted)}
 </style>
 </head>
-<body>
+<body id="top">
 
 <h1>数学建模学习笔记</h1>
 <p class="meta">环境 · numpy 最小集 · 楼梯建造年代那道题 · 最后更新 2025-10-31</p>
 
 <nav>
 <b>目录</b>
-<a href="#env">一、环境：装一次，以后都用它</a>
-<a href="#numpy">二、numpy 最小集（八张表）</a>
-<a href="#task">三、这道题到底在算什么</a>
-<a href="#code">四、代码地图与验收数字</a>
-<a href="#pit">五、易错点清单</a>
-<a href="#err">六、报错速查</a>
-<a href="#road">七、学习路线（7 天 / 5 阶段）</a>
-<a href="#todo">八、进度</a>
-<a href="#qa">九、语法问答（我问过的）</a>
-<a href="#np">十、numpy 概念：shape / reshape / 造数组</a>
+<a class="nav2" href="#env">一、环境：装一次，以后都用它</a>
+<a class="nav2" href="#numpy">二、numpy 最小集</a>
+<a class="nav3" href="#numpy-1">1. 造数组</a>
+<a class="nav3" href="#numpy-2">2. 取元素</a>
+<a class="nav3" href="#numpy-3">3. 整体运算（向量化）</a>
+<a class="nav3" href="#numpy-4">4. 筛选与替换</a>
+<a class="nav3" href="#numpy-5">5. 变形</a>
+<a class="nav3" href="#numpy-6">6. 随机数（一定要设种子）</a>
+<a class="nav3" href="#numpy-7">7. 统计</a>
+<a class="nav3" href="#numpy-8">8. 三个必踩的坑</a>
+<a class="nav2" href="#task">三、这道题到底在算什么</a>
+<a class="nav3" href="#task-1">核心困难：一个方程，三个未知</a>
+<a class="nav3" href="#task-2">三条主线</a>
+<a class="nav3" href="#task-3">三套区间，别混着用</a>
+<a class="nav2" href="#code">四、代码地图与验收数字</a>
+<a class="nav2" href="#pit">五、易错点清单</a>
+<a class="nav2" href="#err">六、报错速查</a>
+<a class="nav2" href="#road">七、学习路线</a>
+<a class="nav3" href="#road-1">先补工具（第 0 周）</a>
+<a class="nav3" href="#road-2">再按节复现（第 1 周）</a>
+<a class="nav3" href="#road-3">最后才做真活（第 2 周起）</a>
+<a class="nav2" href="#todo">八、进度</a>
+<a class="nav2" href="#qa">九、语法问答（我问过的）</a>
+<a class="nav3" href="#qa-1">1. import numpy as np 是什么句式</a>
+<a class="nav3" href="#qa-2">2. np.array([1,2,3]) 是什么，为什么“只能输入整体”</a>
+<a class="nav3" href="#qa-3">3. rng = np.random.default_rng(42) 里的 42 是什么</a>
+<a class="nav3" href="#qa-4">4. line = lambda s="": ... 这一长串</a>
+<a class="nav2" href="#np">十、numpy 概念：shape / reshape / 造数组</a>
+<a class="nav3" href="#np-1">1. shape：每一维有几个元素</a>
+<a class="nav4" href="#np-1-1">怎么一眼看出几维</a>
+<a class="nav3" href="#np-2">2. reshape：重新摆一下形状，不加也不减</a>
+<a class="nav3" href="#np-3">3. linspace 和 arange 的分工</a>
+<a class="nav3" href="#np-4">4. np.zeros(3) 和 np.array([3]) 不是一回事</a>
+<a class="nav3" href="#np-5">5. 形状对不上时的报错</a>
+<a class="nav3" href="#np-6">6. 多维数组怎么切</a>
+<a class="nav4" href="#np-6-1">为什么 a[:, 1:2] 是 (3, 1) 而不是 (3,)？</a>
+<a class="nav3" href="#np-7">7. mean 是均值吗？</a>
+<a class="nav4" href="#np-7-1">axis：按哪个方向平均</a>
+<a class="nav4" href="#np-7-2">加权平均：np.average</a>
+<a class="nav4" href="#np-7-3">标准差默认除以 n，不是 n−1</a>
+<a class="nav4" href="#np-7-4">有 nan 时用 nanmean</a>
+<a class="nav3" href="#np-8">8. std 和 nan 到底是什么</a>
 </nav>
 
 <h2 id="env">一、环境：装一次，以后都用它</h2>
@@ -82,12 +122,13 @@
 <p>跑法（三行以内）：</p>
 <pre><code>cd C:\Users\Lenovo\Desktop\数学建模\code\numpy_basics
 C:\Users\Lenovo\Desktop\Python作业\数模练习\.venv\Scripts\python.exe run_all.py</code></pre>
+<p class="back"><a href="#top">↑ 回到目录</a></p>
 
 <h2 id="numpy">二、numpy 最小集</h2>
 
 <p>numpy 有几百个函数，数模真正用得上的只有这一小撮。下面八张表就是全部，不用再翻别的。</p>
 
-<h3>1. 造数组</h3>
+<h3 id="numpy-1">1. 造数组</h3>
 <table>
 <tr><th>写法</th><th>得到</th></tr>
 <tr><td><code>np.array([1,2,3])</code></td><td>从列表造（最常用）</td></tr>
@@ -96,7 +137,7 @@ C:\Users\Lenovo\Desktop\Python作业\数模练习\.venv\Scripts\python.exe run_a
 <tr><td><code>np.zeros(3)</code> / <code>np.ones(3)</code></td><td>全 0 / 全 1</td></tr>
 </table>
 
-<h3>2. 取元素</h3>
+<h3 id="numpy-2">2. 取元素</h3>
 <table>
 <tr><th>写法</th><th>含义</th></tr>
 <tr><td><code>a[0]</code>、<code>a[-1]</code></td><td>第一个、最后一个</td></tr>
@@ -105,7 +146,7 @@ C:\Users\Lenovo\Desktop\Python作业\数模练习\.venv\Scripts\python.exe run_a
 <tr><td><code>a[a &gt; 15]</code></td><td><b>布尔索引</b>——列表做不到，这是 numpy 的招牌</td></tr>
 </table>
 
-<h3>3. 整体运算（向量化）</h3>
+<h3 id="numpy-3">3. 整体运算（向量化）</h3>
 <pre><code>x = np.arange(1, 6)
 x ** 2        # [ 1  4  9 16 25]
 np.sqrt(x)    # 每个元素开方
@@ -113,26 +154,26 @@ np.sqrt(x)    # 每个元素开方
 x.sum(); x.mean(); x.max()</code></pre>
 <div class="ok box">这是 numpy 存在的理由：<b>不用写 for</b>。20 级台阶乘一个系数，一行就完事。</div>
 
-<h3>4. 筛选与替换</h3>
+<h3 id="numpy-4">4. 筛选与替换</h3>
 <pre><code>x[x &gt; 3]                    # 取出大于 3 的
 (x &gt; 3).sum()               # True 的个数
 np.where(x &lt; 50, 0, x)      # 小于 50 的置 0</code></pre>
 
-<h3>5. 变形</h3>
+<h3 id="numpy-5">5. 变形</h3>
 <pre><code>a.reshape(4, 5)      # 4 行 5 列
 a.reshape(4, 5)[1]   # 第二行</code></pre>
 
-<h3>6. 随机数（一定要设种子）</h3>
+<h3 id="numpy-6">6. 随机数（一定要设种子）</h3>
 <pre><code>rng = np.random.default_rng(42)       # 42 是种子，同种子结果可复现
 rng.normal(0, 1, 5)                   # 正态
 rng.uniform(0, 1, 5)                  # 均匀
 rng.lognormal(mean=np.log(2e-6), sigma=0.3, size=5)   # 对数正态</code></pre>
 
-<h3>7. 统计</h3>
+<h3 id="numpy-7">7. 统计</h3>
 <pre><code>np.median(x); np.percentile(x, 90); np.std(x, ddof=1)
 counts, edges = np.histogram(x, bins=10)</code></pre>
 
-<h3>8. 三个必踩的坑</h3>
+<h3 id="numpy-8">8. 三个必踩的坑</h3>
 <div class="bad box">
 <b>坑 1 · lognormal 的 mean 是「对数的均值」</b><br>
 <code>lognormal(mean=2e-6)</code> 的中位数 ≈ <b>1</b>，不是 2e-6。要中位数是 2e-6，得写 <code>mean=np.log(2e-6)</code>。讲义二 §5.3.1 说它会把 K 放大 500 倍，就是这个。
@@ -145,16 +186,17 @@ counts, edges = np.histogram(x, bins=10)</code></pre>
 <b>坑 3 · 小数组上 numpy 未必快</b><br>
 20 个元素时 for 版甚至更快；向量化的优势在几万次以上。别为了“显得专业”把什么都塞进 numpy。
 </div>
+<p class="back"><a href="#top">↑ 回到目录</a></p>
 
 <h2 id="task">三、这道题到底在算什么</h2>
 
 <p>问题：给一座老楼梯，判断<strong>建造年代</strong>、<strong>使用频率</strong>、<strong>通行模式</strong>、<strong>与史料是否一致</strong>、<strong>石材来源</strong>。</p>
 
-<h3>核心困难：一个方程，三个未知</h3>
+<h3 id="task-1">核心困难：一个方程，三个未知</h3>
 <pre><code>V = N · v₀ = (T · 365 · q̄) · (K·F·s / H)</code></pre>
 <p>磨损体积 V 能测，但 T（用多少年）、q̄（每天多少人踩）、K（磨损系数）三个都不知道。<strong>不可辨识</strong>——这是这道题的真正难点，也是它的价值所在：好答案不是“算出 1874 年”，而是“给出区间并说明哪些结论我不敢下”。</p>
 
-<h3>三条主线</h3>
+<h3 id="task-2">三条主线</h3>
 <table>
 <tr><th>主线</th><th>做法</th><th>结果</th></tr>
 <tr><td>① 标定 K</td><td>找一处已知年代的对照点（同期同材质的构件），反解 K</td><td>把“猜参数”变成“标定参数”</td></tr>
@@ -162,13 +204,14 @@ counts, edges = np.histogram(x, bins=10)</code></pre>
 <tr><td>③ 诚实合成</td><td>蒙特卡洛 + 贝叶斯，把三个区间合成一个</td><td>T ∈ [1836, 1903]，中位 1871</td></tr>
 </table>
 
-<h3>三套区间，别混着用</h3>
+<h3 id="task-3">三套区间，别混着用</h3>
 <table>
 <tr><th>口径</th><th>区间</th><th>宽度</th><th>用法</th></tr>
 <tr><td>只用磨损反演</td><td>[1526, 1989]</td><td>463 年</td><td>说明“单靠磨损什么都定不了”</td></tr>
 <tr><td>只用形制断代</td><td>[1750, 1900]</td><td>150 年</td><td>先验</td></tr>
 <tr><td>两者合成</td><td><b>[1836, 1903]</b></td><td>67 年</td><td>最终结论（中位 1871）</td></tr>
 </table>
+<p class="back"><a href="#top">↑ 回到目录</a></p>
 
 <h2 id="code">四、代码地图与验收数字</h2>
 
@@ -186,6 +229,7 @@ counts, edges = np.histogram(x, bins=10)</code></pre>
 <b>注意两套算例不要混。</b><br>
 讲义里的标准算例是 <b>V = 50 894 mm³</b>（20 级、净宽 1800 mm）；练习文件 <code>05_two_ways.py</code> 为了练手用了更简单的几何（V ≈ 300 697）。两套数字各自自洽，但<b>不是同一个算例</b>，对答案时看清楚用的是哪一套。
 </div>
+<p class="back"><a href="#top">↑ 回到目录</a></p>
 
 <h2 id="pit">五、易错点清单</h2>
 <ol>
@@ -202,6 +246,7 @@ counts, edges = np.histogram(x, bins=10)</code></pre>
 <li>噪声加到“无磨损区”，造出一个并不存在的第三通道。</li>
 <li>BIC 里的 n 用错：那是剖面网格点数（180），不是样本量。</li>
 </ol>
+<p class="back"><a href="#top">↑ 回到目录</a></p>
 
 <h2 id="err">六、报错速查</h2>
 <table>
@@ -215,13 +260,14 @@ counts, edges = np.histogram(x, bins=10)</code></pre>
 <tr><td><code>ModuleNotFoundError</code></td><td>用了系统 python，不是 .venv</td><td>换 <code>.venv\Scripts\python.exe</code></td></tr>
 <tr><td><code>TypeError: LpVariable got unexpected 'lowBound'</code></td><td>pulp 4.x</td><td><code>pip install "pulp&lt;4"</code></td></tr>
 </table>
+<p class="back"><a href="#top">↑ 回到目录</a></p>
 
 <h2 id="road">七、学习路线</h2>
 
-<h3>先补工具（第 0 周）</h3>
+<h3 id="road-1">先补工具（第 0 周）</h3>
 <p>五课、25 题，在 <code>code/numpy_basics/</code>：00 热身（看）→ 01 数组 → 02 向量化 → 03 随机 → 04 统计 → 05 同式两写。每天 40 分钟，三天走完。</p>
 
-<h3>再按节复现（第 1 周）</h3>
+<h3 id="road-2">再按节复现（第 1 周）</h3>
 <table>
 <tr><th>天</th><th>读</th><th>写</th><th>验收</th></tr>
 <tr><td>1</td><td>§2 函数总表</td><td>骨架 + 常量</td><td>能跑不报错</td></tr>
@@ -233,12 +279,13 @@ counts, edges = np.histogram(x, bins=10)</code></pre>
 <tr><td>7</td><td>关上讲义</td><td>重写 v₀/N/T</td><td>数字仍对 + 能预测参数影响</td></tr>
 </table>
 
-<h3>最后才做真活（第 2 周起）</h3>
+<h3 id="road-3">最后才做真活（第 2 周起）</h3>
 <ol>
 <li>量一栋真楼梯（20 级 × 3 次读数 + 材质照片）</li>
 <li>换数据重跑，看结论怎么变</li>
 <li>做仓库 + 一页 README + 3 分钟讲稿</li>
 </ol>
+<p class="back"><a href="#top">↑ 回到目录</a></p>
 
 <h2 id="todo">八、进度</h2>
 <ul>
@@ -253,11 +300,12 @@ counts, edges = np.histogram(x, bins=10)</code></pre>
 <li>☐ §5.3 蒙特卡洛</li>
 <li>☐ 真楼梯实测数据</li>
 </ul>
+<p class="back"><a href="#top">↑ 回到目录</a></p>
 
 <h2 id="qa">九、语法问答（我问过的）</h2>
 <p>这些都是我自己卡住过的地方，记下来省得再翻聊天记录。</p>
 
-<h3>1. <code>import numpy as np</code> 是什么句式</h3>
+<h3 id="qa-1">1. <code>import numpy as np</code> 是什么句式</h3>
 <p>一句话 + 一个别名：把 <code>numpy</code> 这个工具箱搬进来，并给它起个短名字 <code>np</code>。名字在 import 那一刻就定下了，<strong>后面必须用这个短名</strong>。</p>
 <table>
 <tr><th>写法</th><th>后面怎么用</th><th>什么时候用</th></tr>
@@ -268,7 +316,7 @@ counts, edges = np.histogram(x, bins=10)</code></pre>
 <div class="bad box"><b>报错对照：</b><code>NameError: name 'numpy' is not defined</code> —— 写了 <code>as np</code> 却还在用 <code>numpy.</code>；<code>NameError: name 'np' is not defined</code> —— 忘了写 import 那一行。</div>
 <p><code>import math as m</code>、<code>import matplotlib.pyplot as plt</code> 全是同一个句式。别名只是自己起的外号，Python 不检查起得好不好。</p>
 
-<h3>2. <code>np.array([1,2,3])</code> 是什么，为什么“只能输入整体”</h3>
+<h3 id="qa-2">2. <code>np.array([1,2,3])</code> 是什么，为什么“只能输入整体”</h3>
 <p>拆成三块看：<code>np</code> 是工具箱，<code>array</code> 是工具箱里的函数，<code>([1,2,3])</code> 是调用它并传参。<strong>参数只有一个——整个列表</strong>，不是三个数。</p>
 <pre><code>np.array([1, 2, 3])        # ✔ 一个列表 → 一个数组
 np.array(1, 2, 3)          # ✘ TypeError: array() takes from 1 to 2 positional arguments but 4 were given
@@ -283,11 +331,11 @@ np.array([[1,2],[3,4]])    # ✔ 列表套列表 → 二维数组</code></pre>
 <tr><td>20 个元素逐个乘系数</td><td>要写 for</td><td>一行 <code>w * 0.8</code></td></tr>
 </table>
 
-<h3>3. <code>rng = np.random.default_rng(42)</code> 里的 42 是什么</h3>
+<h3 id="qa-3">3. <code>rng = np.random.default_rng(42)</code> 里的 42 是什么</h3>
 <p><code>default_rng(42)</code> 造出一台<strong>随机数生成器</strong>（一个对象），42 是种子：同一个种子 ⇒ 同一串随机数，结果可复现。之后调它身上的方法：<code>rng.normal(...)</code>、<code>rng.uniform(...)</code>、<code>rng.lognormal(...)</code>。</p>
 <div class="warn box">旧写法 <code>np.random.seed(42)</code> + <code>np.random.normal()</code> 还能跑，但新代码统一用 <code>default_rng</code>。</div>
 
-<h3>4. <code>line = lambda s="": ...</code> 这一长串</h3>
+<h3 id="qa-4">4. <code>line = lambda s="": ...</code> 这一长串</h3>
 <p>四样东西叠在一起，拆开就是普通话：</p>
 <pre><code>line = lambda s="": print("─" * 56) or print(s)</code></pre>
 <ul>
@@ -301,11 +349,12 @@ np.array([[1,2],[3,4]])    # ✔ 列表套列表 → 二维数组</code></pre>
     print("─" * 56)
     if s:
         print(s)</code></pre>
+<p class="back"><a href="#top">↑ 回到目录</a></p>
 
 <h2 id="np">十、numpy 概念：shape / reshape / 造数组</h2>
 <p>这一节回答的全是「这个词到底指什么」——不是语法，是概念。</p>
 
-<h3>1. <code>shape</code>：每一维有几个元素</h3>
+<h3 id="np-1">1. <code>shape</code>：每一维有几个元素</h3>
 <p><code>shape</code> 是个<strong>元组</strong>，从外到内，每个数字说这一维有几个元素。</p>
 <table>
 <tr><th>shape</th><th>含义</th><th>通俗说法</th></tr>
@@ -313,7 +362,7 @@ np.array([[1,2],[3,4]])    # ✔ 列表套列表 → 二维数组</code></pre>
 <tr><td><code>(3, 4)</code></td><td>3 × 4</td><td><b>二维</b>，3 行 4 列（一张表）</td></tr>
 <tr><td><code>(2, 3, 4)</code></td><td>2 × 3 × 4</td><td><b>三维</b>，2 张 3 行 4 列的表</td></tr>
 </table>
-<h4>怎么一眼看出几维</h4>
+<h4 id="np-1-1">怎么一眼看出几维</h4>
 <p><code>np.array(...)</code> 的维度就是<b>方括号嵌套的层数</b>：一层一维，两层两维。</p>
 <pre><code>np.array([1, 2, 3])               .shape   # → (3,)       1 层括号 = 一维
 np.array([[1, 2, 3], [4, 5, 6]])  .shape   # → (2, 3)     2 层 = 2 行 3 列
@@ -358,7 +407,7 @@ x[:, None].shape   # → (20, 1)   一维升二维
 y.ravel().shape    # → (20,)     二维压回一维</code></pre>
 </div>
 
-<h3>2. <code>reshape</code>：重新摆一下形状，不加也不减</h3>
+<h3 id="np-2">2. <code>reshape</code>：重新摆一下形状，不加也不减</h3>
 <p>把同一批数字按新形状重新排列。<strong>元素总数必须相等</strong>，否则报错。</p>
 <pre><code>a = np.arange(1, 7)          # [1 2 3 4 5 6]   shape (6,)
 
@@ -386,7 +435,7 @@ a.reshape(2,3).copy()   # 要独立副本就加 .copy()</code></pre>
 <b>形状是对象上的属性，数据才是共享的。</b><code>reshape</code> 返回一个<b>新对象</b>（新形状，指向同一块内存）：改 <code>b[0,0]</code> 改的是数据 ⇒ <code>a</code> 的数据跟着变（<code>np.shares_memory(a, b)</code> 为 <code>True</code>），但 <code>a</code> 的形状不会变。<br>
 想让 <code>a</code> 自己也变成 2 行 3 列，必须重新赋值：<code>a = a.reshape(2, 3)</code>。</div>
 
-<h3>3. <code>linspace</code> 和 <code>arange</code> 的分工</h3>
+<h3 id="np-3">3. <code>linspace</code> 和 <code>arange</code> 的分工</h3>
 <table>
 <tr><th></th><th><code>np.linspace(0, 1, 5)</code></th><th><code>np.arange(0, 1, 0.25)</code></th></tr>
 <tr><td>你告诉它</td><td><b>要几个</b>（5 个）</td><td><b>步长多少</b>（0.25）</td></tr>
@@ -396,18 +445,18 @@ a.reshape(2,3).copy()   # 要独立副本就加 .copy()</code></pre>
 </table>
 <p>所以：<b>要等间距的浮点数，优先 linspace</b>。</p>
 
-<h3>4. <code>np.zeros(3)</code> 和 <code>np.array([3])</code> 不是一回事</h3>
+<h3 id="np-4">4. <code>np.zeros(3)</code> 和 <code>np.array([3])</code> 不是一回事</h3>
 <pre><code>np.zeros(3)        # → [0. 0. 0.]    3 个元素，参数是"要几个"
 np.array([3])      # → [3]           1 个元素，值是 3
 np.array([3, 4])   # → [3 4]         2 个元素
 np.zeros(3, dtype=int)   # → [0 0 0]  要整数得显式指定</code></pre>
 <p>记法一句话：<b><code>zeros/ones/arange</code> 的参数是「形状」，<code>array</code> 的参数是「数据本身」</b>。</p>
 
-<h3>5. 形状对不上时的报错</h3>
+<h3 id="np-5">5. 形状对不上时的报错</h3>
 <pre><code>ValueError: operands could not be broadcast together with shapes (20,) (3,4)</code></pre>
 <p>读法：两个数组的维度配不上，numpy 不知道该把谁和谁一一配对。先 <code>print(a.shape, b.shape)</code>，再想清楚你要的是「一行加一行」还是「所有元素加一个常数」。</p>
 
-<h3>6. 多维数组怎么切</h3>
+<h3 id="np-6">6. 多维数组怎么切</h3>
 <p>规则一句话：<b>逗号分隔，每一维给一个切片</b>。一维时你写 <code>a[2:7]</code>，二维就是 <code>a[行, 列]</code>。</p>
 <pre><code>a = np.arange(1, 13).reshape(3, 4)     # 3 行 4 列
 # [[ 1  2  3  4]
@@ -427,7 +476,7 @@ a[-1]           # → [ 9 10 11 12]    最后一行</code></pre>
 ② 只写一个下标 <code>a[1]</code> 是「整个第 2 行」，不是「第 2 个数」；取单个数是 <code>a[1, 2]</code>。<br>
 ③ 视图规则不变：<code>s = a[0:2, 0:2]</code> 改 <code>s[0,0]</code> 会改到 <code>a</code>；但布尔索引 <code>a[a &gt; 8]</code> 是<b>复制</b>，改它不影响原数组，而且结果被压成一维。
 </div>
-<h4>为什么 <code>a[:, 1:2]</code> 是 <code>(3, 1)</code> 而不是 <code>(3,)</code>？</h4>
+<h4 id="np-6-1">为什么 <code>a[:, 1:2]</code> 是 <code>(3, 1)</code> 而不是 <code>(3,)</code>？</h4>
 <p>规则：<b>哪一维用整数下标，哪一维就被「吃掉」；用切片（或列表），哪一维就保留</b>——哪怕只取到一个元素，它仍是长度 1 的一个维度。</p>
 <pre><code>a.shape            # → (3, 4)
 
@@ -448,7 +497,7 @@ a[1:2, 2]     # → [7]           shape (1,)     行切片 + 列整数 → 列�
 
 <p>三维就是三个切片 <code>c[i, j, k]</code>；某一维全取用 <code>:</code> 或省略号 <code>...</code>，例如 <code>c[:, 0, :]</code>。</p>
 
-<h3>7. mean 是均值吗？</h3>
+<h3 id="np-7">7. mean 是均值吗？</h3>
 <p><code>np.mean</code> 就是<b>算术平均</b>：所有数相加除以个数。它和 <code>np.median</code>（中位数）常被混着说，但两者对"极端值"的反应完全不同。</p>
 <pre><code>a = np.array([1, 2, 3, 4, 10])
 a.mean()          # → 4.0       (1+2+3+4+10)/5
@@ -456,7 +505,7 @@ a.sum()/len(a)    # → 4.0       手写版，同一个数
 np.median(a)      # → 3.0       排序后取中间那个，不被 10 拖走</code></pre>
 <p>一个 10 就能把均值从 3 拉到 4，中位数还是 3。所以：<b>要"典型值"用 median，要"总量平摊"用 mean。</b></p>
 
-<h4>axis：按哪个方向平均</h4>
+<h4 id="np-7-1">axis：按哪个方向平均</h4>
 <pre><code>m = np.array([[1, 2, 3],
               [4, 5, 6]])
 
@@ -465,7 +514,7 @@ m.mean(axis=0)     # → [2.5 3.5 4.5]    按列压 → 每列一个平均
 m.mean(axis=1)     # → [2.  5. ]        按行压 → 每行一个平均</code></pre>
 <p>记法：<code>axis=k</code> 表示<b>把第 k 维压掉</b>——<code>axis=0</code> 压掉行 ⇒ 结果长度 = 列数。</p>
 
-<h4>加权平均：<code>np.average</code></h4>
+<h4 id="np-7-2">加权平均：<code>np.average</code></h4>
 <pre><code>v = np.array([10., 20., 30.])
 w = np.array([0.5, 0.3, 0.2])
 
@@ -473,18 +522,18 @@ np.average(v, weights=w)   # → 17.0     10×0.5 + 20×0.3 + 30×0.2
 v.mean()                   # → 20.0     等权，不是一回事</code></pre>
 <p>建模里"按台阶长度加权""按持续时间加权"都用它——算平均磨损深度时就是按各测点覆盖的台阶长度加权。</p>
 
-<h4>标准差默认除以 n，不是 n−1</h4>
+<h4 id="np-7-3">标准差默认除以 n，不是 n−1</h4>
 <pre><code>b = np.array([1, 2, 3, 4])
 b.std()         # → 1.1180      默认 ddof=0，除以 n（总体标准差）
 b.std(ddof=1)   # → 1.2910      除以 n−1（样本标准差，与 Excel / pandas 一致）</code></pre>
 <p>numpy 默认 <code>ddof=0</code>，pandas 默认 <code>ddof=1</code>——同一个数组两边算出的标准差不同，不是 bug。</p>
 
-<h4>有 nan 时用 nanmean</h4>
+<h4 id="np-7-4">有 nan 时用 nanmean</h4>
 <pre><code>c = np.array([1, 2, np.nan, 4])
 c.mean()        # → nan          一个 nan 传染全部
 np.nanmean(c)   # → 2.3333       跳过 nan 再求平均</code></pre>
 
-<h3>8. std 和 nan 到底是什么</h3>
+<h3 id="np-8">8. std 和 nan 到底是什么</h3>
 <p><b>std = 标准差（standard deviation）</b>：衡量「数据离平均值有多散」，单位与数据本身相同。它就是<b>方差的平方根</b>。</p>
 <pre><code>b = np.array([1., 2., 3., 4.])
 b.mean()          # → 2.5
@@ -525,3 +574,6 @@ np.nanstd([1, 2, np.nan, 4])     # → 1.2472     （ddof=0）</code></pre>
 
 </body>
 </html>
+<p class="back"><a href="#top">↑ 回到目录</a></p>
+
+

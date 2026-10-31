@@ -438,6 +438,42 @@ a[1:2, 2]     # → [7]           shape (1,)     行切片 + 列整数 → 列�
 
 <p>三维就是三个切片 <code>c[i, j, k]</code>；某一维全取用 <code>:</code> 或省略号 <code>...</code>，例如 <code>c[:, 0, :]</code>。</p>
 
+<h3>7. mean 是均值吗？</h3>
+<p><code>np.mean</code> 就是<b>算术平均</b>：所有数相加除以个数。它和 <code>np.median</code>（中位数）常被混着说，但两者对"极端值"的反应完全不同。</p>
+<pre><code>a = np.array([1, 2, 3, 4, 10])
+a.mean()          # → 4.0       (1+2+3+4+10)/5
+a.sum()/len(a)    # → 4.0       手写版，同一个数
+np.median(a)      # → 3.0       排序后取中间那个，不被 10 拖走</code></pre>
+<p>一个 10 就能把均值从 3 拉到 4，中位数还是 3。所以：<b>要"典型值"用 median，要"总量平摊"用 mean。</b></p>
+
+<h4>axis：按哪个方向平均</h4>
+<pre><code>m = np.array([[1, 2, 3],
+              [4, 5, 6]])
+
+m.mean()           # → 3.5              全部 6 个数
+m.mean(axis=0)     # → [2.5 3.5 4.5]    按列压 → 每列一个平均
+m.mean(axis=1)     # → [2.  5. ]        按行压 → 每行一个平均</code></pre>
+<p>记法：<code>axis=k</code> 表示<b>把第 k 维压掉</b>——<code>axis=0</code> 压掉行 ⇒ 结果长度 = 列数。</p>
+
+<h4>加权平均：<code>np.average</code></h4>
+<pre><code>v = np.array([10., 20., 30.])
+w = np.array([0.5, 0.3, 0.2])
+
+np.average(v, weights=w)   # → 17.0     10×0.5 + 20×0.3 + 30×0.2
+v.mean()                   # → 20.0     等权，不是一回事</code></pre>
+<p>建模里"按台阶长度加权""按持续时间加权"都用它——算平均磨损深度时就是按各测点覆盖的台阶长度加权。</p>
+
+<h4>标准差默认除以 n，不是 n−1</h4>
+<pre><code>b = np.array([1, 2, 3, 4])
+b.std()         # → 1.1180      默认 ddof=0，除以 n（总体标准差）
+b.std(ddof=1)   # → 1.2910      除以 n−1（样本标准差，与 Excel / pandas 一致）</code></pre>
+<p>numpy 默认 <code>ddof=0</code>，pandas 默认 <code>ddof=1</code>——同一个数组两边算出的标准差不同，不是 bug。</p>
+
+<h4>有 nan 时用 nanmean</h4>
+<pre><code>c = np.array([1, 2, np.nan, 4])
+c.mean()        # → nan          一个 nan 传染全部
+np.nanmean(c)   # → 2.3333       跳过 nan 再求平均</code></pre>
+
 <p class="meta" style="margin-top:30px">
 这份笔记只记“我踩过的东西”，不抄教程。所有数字都能在 <code>code/</code> 里跑出来。
 </p>

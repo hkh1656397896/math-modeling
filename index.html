@@ -323,7 +323,30 @@ np.array([[1,2],[3,4]])    # ✔ 列表套列表 → 二维数组</code></pre>
 <tr><td><code>len(a)</code></td><td><b>只看第一维</b></td><td><code>3</code>（行数）</td></tr>
 </table>
 <p>为什么要盯着 shape：<strong>所有「整体运算」都按形状走</strong>——reshape 要求元素总数不变，两个数组相加要求形状对得上，矩阵乘按形状校验。报错里出现 <code>shapes</code> 就先 <code>print(a.shape, b.shape)</code>。</p>
-<div class="bad box"><code>(20,)</code> 和 <code>(20, 1)</code> <b>不是一回事</b>：前者是一维序列，后者是 20 行 1 列的矩阵。数学上都是 20 个数，但广播和矩阵乘的行为不同——这是建模代码里最容易翻车的地方。</div>
+<div class="bad box"><code>(20,)</code> 和 <code>(20, 1)</code> <b>不是一回事</b>：前者是一维序列，后者是 20 行 1 列的矩阵。数学上都是 20 个数，但广播和矩阵乘的行为不同——这是建模代码里最容易翻车的地方。
+<pre><code>x = np.arange(1, 21)          # 一维
+y = x.reshape(-1, 1)          # 20 行 1 列
+
+x.shape     # → (20,)      ← 一个数：一维
+y.shape     # → (20, 1)    ← 两个数：二维
+
+x.size      # → 20
+y.size      # → 20         ← size 一样
+len(x)      # → 20
+len(y)      # → 20         ← len 只看第一维，也一样（所以别用 len 判断维度）
+x.ndim      # → 1
+y.ndim      # → 2          ← ndim 才看得出区别
+
+print(x[:3])  # → [1 2 3]
+print(y[:3])  # → [[1]
+              #    [2]
+              #    [3]]
+
+(x - y).shape # → (20, 20) ← 广播出一个 20×20 的矩阵
+
+x[:, None].shape   # → (20, 1)   一维升二维
+y.ravel().shape    # → (20,)     二维压回一维</code></pre>
+</div>
 
 <h3>2. <code>reshape</code>：重新摆一下形状，不加也不减</h3>
 <p>把同一批数字按新形状重新排列。<strong>元素总数必须相等</strong>，否则报错。</p>

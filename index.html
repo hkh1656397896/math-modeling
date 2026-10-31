@@ -104,6 +104,7 @@
 <a class="nav4" href="#np-7-3">标准差默认除以 n，不是 n−1</a>
 <a class="nav4" href="#np-7-4">有 nan 时用 nanmean</a>
 <a class="nav3" href="#np-8">8. std 和 nan 到底是什么</a>
+<a class="nav3" href="#np-9">9. mask（布尔掩码）是什么</a>
 </nav>
 
 <h2 id="env">一、环境：装一次，以后都用它</h2>
@@ -573,9 +574,34 @@ np.nansum([1, 2, np.nan, 4])     # → 7.0
 np.nanstd([1, 2, np.nan, 4])     # → 1.2472     （ddof=0）</code></pre>
 <div class="warn box"><b>三条要记住：</b>① 判断缺失只能用 <code>np.isnan(x)</code>，写 <code>x == np.nan</code> 永远为 <code>False</code>；② <code>nan</code> 会传染，一步不查，最后结果全是 <code>nan</code>；③ 结果莫名变成 <code>nan</code> 时，先 <code>print(np.isnan(a).sum())</code> 数一下有几个，再回头看数据从哪来。</div>
 
+<h3 id="np-9">9. mask（布尔掩码）是什么</h3>
+<p><code>mask = x &gt; 3</code> <b>不是</b>「如果 x 大于 3 就怎样」的分支判断，而是把比较<b>一次性施加到每个元素</b>上，返回一个和 <code>x</code> 等长的<b>布尔数组</b>（<code>dtype=bool</code>）。每个位置只回答一个问题：这个元素满足条件吗？</p>
+<pre><code>x    = np.array([1, 4, 2, 7, 5])
+mask = x &gt; 3
+
+mask        # → [False  True False  True  True]   dtype bool   shape (5,)
+type(mask)  # → numpy.ndarray</code></pre>
+<p>名字叫 mask（掩码）是"遮罩"的意思：<b>True 的位置透光（留下），False 的位置被挡住（丢掉）</b>。</p>
+<table>
+<tr><th>写法</th><th>结果</th></tr>
+<tr><td><code>x[mask]</code></td><td><code>[4 7 5]</code> —— 只留下 True 的位置</td></tr>
+<tr><td><code>mask.sum()</code></td><td><code>3</code> —— True 的个数（True 当 1）</td></tr>
+<tr><td><code>~mask</code></td><td><code>[ True False  True False False]</code> —— 取反</td></tr>
+<tr><td><code>y[mask] = 0</code></td><td>满足条件的元素被改成 0</td></tr>
+<tr><td><code>mask &amp; m2</code> / <code>mask | m2</code></td><td>「且」/「或」（逐元素）</td></tr>
+</table>
+<p>它把"筛选"这件事从原来的 <code>for</code> 循环 + <code>if</code> + <code>append</code> 三行，压成一行 <code>x[x &gt; 3]</code>——这就是 numpy 最值钱的写法。</p>
+<div class="warn box"><b>三个坑：</b><br>
+① 不能用 <code>and</code> / <code>or</code>，会报 <code>ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()</code>；必须用 <code>&amp;</code> <code>|</code>，并且<b>每个比较都加括号</b>：<code>(x &gt; 3) &amp; (x &lt; 7)</code>。<br>
+② <code>x[mask]</code> 选出的是<b>复制</b>，改它不会改 <code>x</code>；要改原件得写成赋值形式 <code>x[mask] = 0</code>。<br>
+③ <code>mask</code> 必须和 <code>x</code> 形状一致，否则报 <code>IndexError: boolean index did not match indexed array</code>。
+</div>
+
 <p class="meta" style="margin-top:30px">
 这份笔记只记“我踩过的东西”，不抄教程。所有数字都能在 <code>code/</code> 里跑出来。
 </p>
+
+<p class="back"><a href="#top">↑ 回到目录</a></p>
 
 <a class="fab" id="fab" href="#top" aria-label="回到目录">↑ 目录</a>
 <script>
@@ -587,7 +613,4 @@ np.nanstd([1, 2, np.nan, 4])     # → 1.2472     （ddof=0）</code></pre>
 </script>
 </body>
 </html>
-<p class="back"><a href="#top">↑ 回到目录</a></p>
-
-
 

@@ -58,6 +58,7 @@
 <a href="#road">七、学习路线（7 天 / 5 阶段）</a>
 <a href="#todo">八、进度</a>
 <a href="#qa">九、语法问答（我问过的）</a>
+<a href="#np">十、numpy 概念：shape / reshape / 造数组</a>
 </nav>
 
 <h2 id="env">一、环境：装一次，以后都用它</h2>
@@ -300,6 +301,75 @@ np.array([[1,2],[3,4]])    # ✔ 列表套列表 → 二维数组</code></pre>
     print("─" * 56)
     if s:
         print(s)</code></pre>
+
+<h2 id="np">十、numpy 概念：shape / reshape / 造数组</h2>
+<p>这一节回答的全是「这个词到底指什么」——不是语法，是概念。</p>
+
+<h3>1. <code>shape</code>：每一维有几个元素</h3>
+<p><code>shape</code> 是个<strong>元组</strong>，从外到内，每个数字说这一维有几个元素。</p>
+<table>
+<tr><th>shape</th><th>含义</th><th>通俗说法</th></tr>
+<tr><td><code>(20,)</code></td><td>1 个维度 × 20</td><td><b>一维</b>，20 个数排成一列</td></tr>
+<tr><td><code>(3, 4)</code></td><td>3 × 4</td><td><b>二维</b>，3 行 4 列（一张表）</td></tr>
+<tr><td><code>(2, 3, 4)</code></td><td>2 × 3 × 4</td><td><b>三维</b>，2 张 3 行 4 列的表</td></tr>
+</table>
+<div class="warn box"><code>(20,)</code> 里那个逗号不是笔误：Python 里 <code>(20)</code> 是整数 20，<code>(20,)</code> 才是「只有一个元素的元组」。shape 永远是元组，所以一维数组显示成 <code>(20,)</code>——看到末尾逗号就知道它是<b>一维</b>。</div>
+
+<p>三个容易混的属性：</p>
+<table>
+<tr><th>属性</th><th>含义</th><th><code>(3,4)</code> 时</th></tr>
+<tr><td><code>shape</code></td><td>每一维各几个</td><td><code>(3, 4)</code></td></tr>
+<tr><td><code>size</code></td><td>总共有几个（各维相乘）</td><td><code>12</code></td></tr>
+<tr><td><code>len(a)</code></td><td><b>只看第一维</b></td><td><code>3</code>（行数）</td></tr>
+</table>
+<p>为什么要盯着 shape：<strong>所有「整体运算」都按形状走</strong>——reshape 要求元素总数不变，两个数组相加要求形状对得上，矩阵乘按形状校验。报错里出现 <code>shapes</code> 就先 <code>print(a.shape, b.shape)</code>。</p>
+<div class="bad box"><code>(20,)</code> 和 <code>(20, 1)</code> <b>不是一回事</b>：前者是一维序列，后者是 20 行 1 列的矩阵。数学上都是 20 个数，但广播和矩阵乘的行为不同——这是建模代码里最容易翻车的地方。</div>
+
+<h3>2. <code>reshape</code>：重新摆一下形状，不加也不减</h3>
+<p>把同一批数字按新形状重新排列。<strong>元素总数必须相等</strong>，否则报错。</p>
+<pre><code>a = np.arange(1, 7)          # [1 2 3 4 5 6]   shape (6,)
+
+a.reshape(2, 3)              # [[1 2 3]
+                             #  [4 5 6]]
+
+a.reshape(3, 2)              # [[1 2]
+                             #  [3 4]
+                             #  [5 6]]
+
+a.reshape(-1, 3)             # 行数写 -1，让它自己算 → 还是 [[1 2 3],[4 5 6]]
+
+a.reshape(4, 2)              # ✘ ValueError: cannot reshape array of size 6 into shape (4,2)</code></pre>
+<p>要点三条：</p>
+<ul>
+<li>元素<b>按原顺序</b>填进去（一行填满再下一行），不是随机分配；</li>
+<li>写 <code>-1</code> 表示「这一维你自己算」，只能出现一次；</li>
+<li><code>reshape</code> 返回的是<b>视图</b>，不是复制——改新数组会改原数组：</li>
+</ul>
+<pre><code>b = a.reshape(2, 3)
+b[0, 0] = 99
+print(a)        # → [99  2  3  4  5  6]   原数组也变了！
+a.reshape(2,3).copy()   # 要独立副本就加 .copy()</code></pre>
+
+<h3>3. <code>linspace</code> 和 <code>arange</code> 的分工</h3>
+<table>
+<tr><th></th><th><code>np.linspace(0, 1, 5)</code></th><th><code>np.arange(0, 1, 0.25)</code></th></tr>
+<tr><td>你告诉它</td><td><b>要几个</b>（5 个）</td><td><b>步长多少</b>（0.25）</td></tr>
+<tr><td>含终点吗</td><td><b>含</b>：<code>[0. 0.25 0.5 0.75 1.]</code></td><td><b>不含</b>：<code>[0. 0.25 0.5 0.75]</code></td></tr>
+<tr><td>适合</td><td>画图横轴、算分位点的网格</td><td>整数序列 <code>1..20</code></td></tr>
+<tr><td>坑</td><td>个数写错就整批错</td><td>浮点累加有误差，最后一个数可能不是精确值</td></tr>
+</table>
+<p>所以：<b>要等间距的浮点数，优先 linspace</b>。</p>
+
+<h3>4. <code>np.zeros(3)</code> 和 <code>np.array([3])</code> 不是一回事</h3>
+<pre><code>np.zeros(3)        # → [0. 0. 0.]    3 个元素，参数是"要几个"
+np.array([3])      # → [3]           1 个元素，值是 3
+np.array([3, 4])   # → [3 4]         2 个元素
+np.zeros(3, dtype=int)   # → [0 0 0]  要整数得显式指定</code></pre>
+<p>记法一句话：<b><code>zeros/ones/arange</code> 的参数是「形状」，<code>array</code> 的参数是「数据本身」</b>。</p>
+
+<h3>5. 形状对不上时的报错</h3>
+<pre><code>ValueError: operands could not be broadcast together with shapes (20,) (3,4)</code></pre>
+<p>读法：两个数组的维度配不上，numpy 不知道该把谁和谁一一配对。先 <code>print(a.shape, b.shape)</code>，再想清楚你要的是「一行加一行」还是「所有元素加一个常数」。</p>
 
 <p class="meta" style="margin-top:30px">
 这份笔记只记“我踩过的东西”，不抄教程。所有数字都能在 <code>code/</code> 里跑出来。

@@ -1,0 +1,35 @@
+01_array.py
+q1  b = a[2:7]
+q2  c = a[a % 2 == 0]
+q3  d = a.reshape(4, 5)[0]
+q4  n = len(a[a > 15])
+q5  w = np.linspace(0.42, 0.31, 20)
+
+02_vectorize.py
+q1  s = (x ** 2).sum()
+q2  n = len(x[x % 3 == 0])
+q3  n = (np.sqrt(x) > 5).sum()
+q4  s = np.where(x < 50, 0, x).sum()
+q5  s = ((x + 1) ** 2).sum()
+
+03_random.py
+q1  rng2 = np.random.default_rng(42).normal(0, 1, 10)
+q2  s = rng.lognormal(mean=0, sigma=0.5, size=1000); med = np.median(s)
+q3  u = rng.uniform(0, 1, 1000); m = u.mean()
+q4  wrong = np.median(rng.lognormal(mean=2e-6, sigma=0.3, size=2000))
+    right = np.median(np.random.default_rng(3).lognormal(mean=np.log(2e-6), sigma=0.3, size=2000))
+q5  years = rng.lognormal(mean=np.log(150), sigma=0.8, size=5000); p90 = np.percentile(years, 90)
+
+04_stats.py
+q1  m = x.mean(); med = np.median(x)
+q2  p = np.percentile(x, 90)
+q3  counts, edges = np.histogram(x, bins=10)
+q4  lo = np.percentile(x, 5); hi = np.percentile(x, 95); trimmed = x[(x >= lo) & (x <= hi)].mean()
+q5  s0 = np.std(x); s1 = np.std(x, ddof=1)
+
+05_two_ways.py
+q1  total += np.pi * A_MM * B_MM * w
+q2  w = np.array(W); v_np = (np.pi * A_MM * B_MM * w).sum()
+q3  v0 = V / N_IMPACTS; T = N_IMPACTS / (365 * Q_BAR)
+q4  avg = (w * idx).sum() / idx.sum()
+q5  两版结果一致即可（耗时只是参考）

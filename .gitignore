@@ -1,0 +1,10 @@
+﻿# 虚拟环境与缓存
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# 输出与临时
+out/
+*.log
+.vscode/

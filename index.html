@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>数学建模学习笔记 · 环境 / numpy / 楼梯那道题</title>
+<style>
+  :root{
+    --bg:#ffffff; --fg:#1f2328; --muted:#656d76; --line:#d8dee4;
+    --code-bg:#f6f8fa; --pre-bg:#1f2328; --pre-fg:#e6edf3;
+    --warn-bg:#fff8e5; --warn-line:#e0a800;
+    --ok-bg:#eaf7ee; --ok-line:#2da44e;
+    --bad-bg:#fdeceb; --bad-line:#cf222e;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; padding:16px 14px 60px; background:var(--bg); color:var(--fg);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    font-size:16px; line-height:1.8; -webkit-text-size-adjust:100%;
+  }
+  h1{font-size:22px; line-height:1.4; margin:0 0 6px}
+  h2{font-size:19px; margin:34px 0 12px; padding:8px 0 8px 10px; border-left:4px solid #0969da; background:#f0f6ff}
+  h3{font-size:17px; margin:24px 0 8px; padding-bottom:6px; border-bottom:1px solid var(--line)}
+  p{margin:8px 0}
+  .meta{color:var(--muted); font-size:13px; margin-bottom:14px}
+  code{background:var(--code-bg); padding:1px 5px; border-radius:4px;
+    font-family:ui-monospace,Menlo,Consolas,"Courier New",monospace; font-size:.9em; word-break:break-word}
+  pre{background:var(--pre-bg); color:var(--pre-fg); padding:12px; border-radius:8px;
+    overflow-x:auto; margin:10px 0; font-size:13.5px; line-height:1.6}
+  pre code{background:none; padding:0; color:inherit; font-size:inherit; white-space:pre}
+  table{border-collapse:collapse; width:100%; margin:10px 0; font-size:14.5px}
+  th,td{border:1px solid var(--line); padding:6px 8px; text-align:left; vertical-align:top}
+  th{background:#f6f8fa}
+  .box{border-radius:8px; padding:10px 12px; margin:12px 0; font-size:15px}
+  .warn{background:var(--warn-bg); border-left:4px solid var(--warn-line)}
+  .ok{background:var(--ok-bg); border-left:4px solid var(--ok-line)}
+  .bad{background:var(--bad-bg); border-left:4px solid var(--bad-line)}
+  ul,ol{padding-left:22px} li{margin:4px 0}
+  nav{background:#f6f8fa; border:1px solid var(--line); border-radius:8px; padding:10px 14px; margin:14px 0}
+  nav a{display:block; color:#0969da; text-decoration:none; padding:2px 0}
+  a{color:#0969da}
+  .tag{display:inline-block; background:#eef2f7; border-radius:4px; padding:0 6px; font-size:12.5px; color:var(--muted)}
+</style>
+</head>
+<body>
+
+<h1>数学建模学习笔记</h1>
+<p class="meta">环境 · numpy 最小集 · 楼梯建造年代那道题 · 最后更新 2025-10-31</p>
+
+<nav>
+<b>目录</b>
+<a href="#env">一、环境：装一次，以后都用它</a>
+<a href="#numpy">二、numpy 最小集（八张表）</a>
+<a href="#task">三、这道题到底在算什么</a>
+<a href="#code">四、代码地图与验收数字</a>
+<a href="#pit">五、易错点清单</a>
+<a href="#err">六、报错速查</a>
+<a href="#road">七、学习路线（7 天 / 5 阶段）</a>
+<a href="#todo">八、进度</a>
+</nav>
+
+<h2 id="env">一、环境：装一次，以后都用它</h2>
+
+<p>数学建模的代码环境只装一次，之后每道题都用同一个解释器。我现在用的是<strong>项目内虚拟环境</strong>，好处是换电脑拷过去就能跑，也不会污染系统 Python。</p>
+
+<table>
+<tr><th>项</th><th>值</th></tr>
+<tr><td>解释器</td><td><code>C:\Users\Lenovo\Desktop\Python作业\数模练习\.venv\Scripts\python.exe</code></td></tr>
+<tr><td>Python</td><td>3.12.10</td></tr>
+<tr><td>关键库</td><td>numpy 2.5.4 · scipy 1.18.1 · matplotlib 3.11.2 · pandas 3.1.0 · pulp 3.3.2</td></tr>
+<tr><td>装法</td><td><code>py -m venv .venv</code> 然后 <code>pip install -i https://pypi.tuna.tsinghua.edu.cn/simple numpy scipy matplotlib pandas "pulp&lt;4"</code></td></tr>
+</table>
+
+<div class="warn box">
+<b>两个坑，记一下。</b><br>
+① <code>pulp</code> 4.x 是重写版，<code>LpVariable(..., lowBound=0)</code> 会直接 <code>TypeError</code>，必须钉 <code>pulp&lt;4</code>（3.3.x 才有经典 API）。<br>
+② <code>run.bat</code> 里不要写中文注释——cmd 按 OEM 码页读批处理，UTF-8 的中文会把命令行拆坏，报 <code>'参数里的脚本' 不是内部或外部命令</code>。批处理一律用纯 ASCII。
+</div>
+
+<p>跑法（三行以内）：</p>
+<pre><code>cd C:\Users\Lenovo\Desktop\数学建模\code\numpy_basics
+C:\Users\Lenovo\Desktop\Python作业\数模练习\.venv\Scripts\python.exe run_all.py</code></pre>
+
+<h2 id="numpy">二、numpy 最小集</h2>
+
+<p>numpy 有几百个函数，数模真正用得上的只有这一小撮。下面八张表就是全部，不用再翻别的。</p>
+
+<h3>1. 造数组</h3>
+<table>
+<tr><th>写法</th><th>得到</th></tr>
+<tr><td><code>np.array([1,2,3])</code></td><td>从列表造（最常用）</td></tr>
+<tr><td><code>np.arange(1,21)</code></td><td>1~20，左闭右开</td></tr>
+<tr><td><code>np.linspace(0,1,5)</code></td><td>0~1 等间距 5 个，含两端</td></tr>
+<tr><td><code>np.zeros(3)</code> / <code>np.ones(3)</code></td><td>全 0 / 全 1</td></tr>
+</table>
+
+<h3>2. 取元素</h3>
+<table>
+<tr><th>写法</th><th>含义</th></tr>
+<tr><td><code>a[0]</code>、<code>a[-1]</code></td><td>第一个、最后一个</td></tr>
+<tr><td><code>a[2:7]</code></td><td>下标 2~6（左闭右开）</td></tr>
+<tr><td><code>a[:5]</code>、<code>a[::5]</code></td><td>前 5 个；每 5 个取一个</td></tr>
+<tr><td><code>a[a &gt; 15]</code></td><td><b>布尔索引</b>——列表做不到，这是 numpy 的招牌</td></tr>
+</table>
+
+<h3>3. 整体运算（向量化）</h3>
+<pre><code>x = np.arange(1, 6)
+x ** 2        # [ 1  4  9 16 25]
+np.sqrt(x)    # 每个元素开方
+1 / x         # 每个元素取倒数
+x.sum(); x.mean(); x.max()</code></pre>
+<div class="ok box">这是 numpy 存在的理由：<b>不用写 for</b>。20 级台阶乘一个系数，一行就完事。</div>
+
+<h3>4. 筛选与替换</h3>
+<pre><code>x[x &gt; 3]                    # 取出大于 3 的
+(x &gt; 3).sum()               # True 的个数
+np.where(x &lt; 50, 0, x)      # 小于 50 的置 0</code></pre>
+
+<h3>5. 变形</h3>
+<pre><code>a.reshape(4, 5)      # 4 行 5 列
+a.reshape(4, 5)[1]   # 第二行</code></pre>
+
+<h3>6. 随机数（一定要设种子）</h3>
+<pre><code>rng = np.random.default_rng(42)       # 42 是种子，同种子结果可复现
+rng.normal(0, 1, 5)                   # 正态
+rng.uniform(0, 1, 5)                  # 均匀
+rng.lognormal(mean=np.log(2e-6), sigma=0.3, size=5)   # 对数正态</code></pre>
+
+<h3>7. 统计</h3>
+<pre><code>np.median(x); np.percentile(x, 90); np.std(x, ddof=1)
+counts, edges = np.histogram(x, bins=10)</code></pre>
+
+<h3>8. 三个必踩的坑</h3>
+<div class="bad box">
+<b>坑 1 · lognormal 的 mean 是「对数的均值」</b><br>
+<code>lognormal(mean=2e-6)</code> 的中位数 ≈ <b>1</b>，不是 2e-6。要中位数是 2e-6，得写 <code>mean=np.log(2e-6)</code>。讲义二 §5.3.1 说它会把 K 放大 500 倍，就是这个。
+</div>
+<div class="warn box">
+<b>坑 2 · 切片是视图</b><br>
+<code>d = a[:3]</code> 之后改 <code>d[0]</code>，<code>a</code> 也变了。要独立就 <code>a[:3].copy()</code>。
+</div>
+<div class="warn box">
+<b>坑 3 · 小数组上 numpy 未必快</b><br>
+20 个元素时 for 版甚至更快；向量化的优势在几万次以上。别为了“显得专业”把什么都塞进 numpy。
+</div>
+
+<h2 id="task">三、这道题到底在算什么</h2>
+
+<p>问题：给一座老楼梯，判断<strong>建造年代</strong>、<strong>使用频率</strong>、<strong>通行模式</strong>、<strong>与史料是否一致</strong>、<strong>石材来源</strong>。</p>
+
+<h3>核心困难：一个方程，三个未知</h3>
+<pre><code>V = N · v₀ = (T · 365 · q̄) · (K·F·s / H)</code></pre>
+<p>磨损体积 V 能测，但 T（用多少年）、q̄（每天多少人踩）、K（磨损系数）三个都不知道。<strong>不可辨识</strong>——这是这道题的真正难点，也是它的价值所在：好答案不是“算出 1874 年”，而是“给出区间并说明哪些结论我不敢下”。</p>
+
+<h3>三条主线</h3>
+<table>
+<tr><th>主线</th><th>做法</th><th>结果</th></tr>
+<tr><td>① 标定 K</td><td>找一处已知年代的对照点（同期同材质的构件），反解 K</td><td>把“猜参数”变成“标定参数”</td></tr>
+<tr><td>② 压 T</td><td>形制断代（石材加工痕迹、灰浆、栏板样式）给出先验区间</td><td>T ∈ [1750, 1900]</td></tr>
+<tr><td>③ 诚实合成</td><td>蒙特卡洛 + 贝叶斯，把三个区间合成一个</td><td>T ∈ [1836, 1903]，中位 1871</td></tr>
+</table>
+
+<h3>三套区间，别混着用</h3>
+<table>
+<tr><th>口径</th><th>区间</th><th>宽度</th><th>用法</th></tr>
+<tr><td>只用磨损反演</td><td>[1526, 1989]</td><td>463 年</td><td>说明“单靠磨损什么都定不了”</td></tr>
+<tr><td>只用形制断代</td><td>[1750, 1900]</td><td>150 年</td><td>先验</td></tr>
+<tr><td>两者合成</td><td><b>[1836, 1903]</b></td><td>67 年</td><td>最终结论（中位 1871）</td></tr>
+</table>
+
+<h2 id="code">四、代码地图与验收数字</h2>
+
+<table>
+<tr><th>函数</th><th>干什么</th><th>验收数字</th></tr>
+<tr><td><code>ellipse_volume</code></td><td>每级踏面凹陷体积 π·a·b·w</td><td>V = 50 894 mm³</td></tr>
+<tr><td><code>impacts_from_volume</code></td><td>V 除以单次磨损 v₀</td><td>N = 6.059×10⁶ 次</td></tr>
+<tr><td><code>mc_use_years</code></td><td>蒙特卡洛抽 T、q̄、K</td><td>中位 134 年，90% [36, 499]</td></tr>
+<tr><td><code>bayes_dating</code></td><td>与形制先验合成</td><td>[1836, 1903]，中位 1871</td></tr>
+<tr><td><code>gmm_em</code></td><td>踏面磨损剖面双峰（判断单双人）</td><td>峰位 1.18 / 1.63 m</td></tr>
+<tr><td><code>dp_segment</code></td><td>分段找“人流变化点”</td><td>5 段，6–10 段跳变最大</td></tr>
+</table>
+
+<div class="warn box">
+<b>注意两套算例不要混。</b><br>
+讲义里的标准算例是 <b>V = 50 894 mm³</b>（20 级、净宽 1800 mm）；练习文件 <code>05_two_ways.py</code> 为了练手用了更简单的几何（V ≈ 300 697）。两套数字各自自洽，但<b>不是同一个算例</b>，对答案时看清楚用的是哪一套。
+</div>
+
+<h2 id="pit">五、易错点清单</h2>
+<ol>
+<li><code>lognormal(mean=K)</code> 不是“中位数 K”，是“对数均值 K”（放大 500 倍）。</li>
+<li>切片是视图，改副本会改原数组。</li>
+<li><code>np.std</code> 默认除 n，<code>ddof=1</code> 才除 n−1。</li>
+<li>整数除法 <code>//</code> 与 <code>/</code> 结果不同，量纲会因此差 1000 倍。</li>
+<li>忘了 <code>rng.default_rng(seed)</code> 的种子，结果每次都不一样，没法复现。</li>
+<li>把“极大值”当“最大值”（区间端点可能更大）。</li>
+<li>只给点估计、不给区间——这道题最忌这个。</li>
+<li>三套区间混着说（463 年 / 150 年 / 67 年口径不同）。</li>
+<li>BF 拿假设自己除自己，恒等于 1（应该 H1 对 H2）。</li>
+<li>EM 的 M 步漏了权重，峰位会偏半米（0.88 而不是 1.39）。</li>
+<li>噪声加到“无磨损区”，造出一个并不存在的第三通道。</li>
+<li>BIC 里的 n 用错：那是剖面网格点数（180），不是样本量。</li>
+</ol>
+
+<h2 id="err">六、报错速查</h2>
+<table>
+<tr><th>报错</th><th>通常原因</th><th>怎么改</th></tr>
+<tr><td><code>NameError: name 'np' is not defined</code></td><td>忘了 <code>import numpy as np</code></td><td>文件开头加一行</td></tr>
+<tr><td><code>NameError: name 'numpy' is not defined</code></td><td>写了 <code>as np</code> 却又用 <code>numpy.</code></td><td>统一用 <code>np.</code></td></tr>
+<tr><td><code>TypeError: array() takes ... </code></td><td><code>np.array(1, 2, 3)</code></td><td>写成 <code>np.array([1,2,3])</code></td></tr>
+<tr><td><code>IndexError</code></td><td>下标越界（忘了左闭右开）</td><td>检查 <code>len(a)</code> 与切片终点</td></tr>
+<tr><td><code>ValueError: shapes not aligned</code></td><td>矩阵乘/广播形状不匹配</td><td><code>print(a.shape, b.shape)</code></td></tr>
+<tr><td><code>ZeroDivisionError</code></td><td>分母里有 0（常见于归一化）</td><td>加 <code>max(x, 1e-12)</code></td></tr>
+<tr><td><code>ModuleNotFoundError</code></td><td>用了系统 python，不是 .venv</td><td>换 <code>.venv\Scripts\python.exe</code></td></tr>
+<tr><td><code>TypeError: LpVariable got unexpected 'lowBound'</code></td><td>pulp 4.x</td><td><code>pip install "pulp&lt;4"</code></td></tr>
+</table>
+
+<h2 id="road">七、学习路线</h2>
+
+<h3>先补工具（第 0 周）</h3>
+<p>五课、25 题，在 <code>code/numpy_basics/</code>：00 热身（看）→ 01 数组 → 02 向量化 → 03 随机 → 04 统计 → 05 同式两写。每天 40 分钟，三天走完。</p>
+
+<h3>再按节复现（第 1 周）</h3>
+<table>
+<tr><th>天</th><th>读</th><th>写</th><th>验收</th></tr>
+<tr><td>1</td><td>§2 函数总表</td><td>骨架 + 常量</td><td>能跑不报错</td></tr>
+<tr><td>2</td><td>§5.1 §5.2</td><td><code>ellipse_volume</code></td><td>V = 50 894</td></tr>
+<tr><td>3</td><td>§5.3</td><td><code>mc_use_years</code></td><td>中位 134、[36,499]</td></tr>
+<tr><td>4</td><td>§5.4 §5.5</td><td>反演 q̄、敏感性</td><td>110.7 / 55.3 / 31.9</td></tr>
+<tr><td>5</td><td>§5.6 §5.7</td><td>GMM、DP</td><td>1.18/1.63；5 段</td></tr>
+<tr><td>6</td><td>§5.8 §5.9</td><td>Jaccard/τ/BF/材料</td><td>0.208 / −0.195 / 56.96</td></tr>
+<tr><td>7</td><td>关上讲义</td><td>重写 v₀/N/T</td><td>数字仍对 + 能预测参数影响</td></tr>
+</table>
+
+<h3>最后才做真活（第 2 周起）</h3>
+<ol>
+<li>量一栋真楼梯（20 级 × 3 次读数 + 材质照片）</li>
+<li>换数据重跑，看结论怎么变</li>
+<li>做仓库 + 一页 README + 3 分钟讲稿</li>
+</ol>
+
+<h2 id="todo">八、进度</h2>
+<ul>
+<li>☑ 环境（.venv + 5 个库）</li>
+<li>☑ numpy_basics 五课脚本</li>
+<li>☑ stair_extra.py（误差传播 / 衰减剖面 / T₂ 区间 / 区间表）</li>
+<li>☐ 00_warmup 跑通并改三处</li>
+<li>☐ 01~02（10 题）</li>
+<li>☐ 03~04（10 题）</li>
+<li>☐ 05（5 题）</li>
+<li>☐ stair_model.py 第 1 节：<code>ellipse_volume</code> → V = 50 894</li>
+<li>☐ §5.3 蒙特卡洛</li>
+<li>☐ 真楼梯实测数据</li>
+</ul>
+
+<p class="meta" style="margin-top:30px">
+这份笔记只记“我踩过的东西”，不抄教程。所有数字都能在 <code>code/</code> 里跑出来。
+</p>
+
+</body>
+</html>

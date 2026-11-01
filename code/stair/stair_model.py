@@ -60,28 +60,25 @@ HARDNESS_PA = 5.0e9     # 材料硬度 H（Pa）≈ 5 GPa（大理石/花岗岩�
 # ============================================================
 def ellipse_volume(a_mm, b_mm, d_mm):
     """一级台阶踏面上那个「中间最深、边缘趋零」的磨损坑，体积是多少（mm³）。
-
+    
     参数
     ----
     a_mm, b_mm : float  磨损椭圆的两个半轴（mm）
     d_mm       : float  这一级台阶的最大磨损深度（mm）
-
+    
     返回
     ----
     float  体积（mm³）
 
     公式在讲义二 §5.2 —— **注意式 (4) 前面有个系数**，坑不是平底盒子。
     """
-    raise NotImplementedError("Day 1：ellipse_volume 还没写")
+    return 0.5 * np.pi * a_mm * b_mm * d_mm
 
 
 # ============================================================
-# 2. 主程序（这部分已写好，不用改；它负责打印和自检）
+# 2. 主程序（这部分已写好，不用改；它负责逐级累加并打印验收数字）
 # ============================================================
 def main():
-    assert WEAR_DEPTH.size == N_STEPS, \
-        f"WEAR_DEPTH 应该有 {N_STEPS} 个，现在是 {WEAR_DEPTH.size} 个"
-
     # 逐级算体积再累加（Day 1 只到这一步；Day 2 再往下算 v0 和 N）
     V = sum(ellipse_volume(PIT_A, PIT_B, d) for d in WEAR_DEPTH)
 

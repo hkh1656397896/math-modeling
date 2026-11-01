@@ -1,5 +1,6 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """依次跑五课，汇总得分。"""
+import os
 import re
 import subprocess
 import sys
@@ -11,7 +12,14 @@ total = 0
 passed = 0
 for f in files:
     print(f"\n{'=' * 56}\n{f.name}\n{'=' * 56}")
-    r = subprocess.run([sys.executable, str(f)], capture_output=True, text=True, encoding="utf-8")
+    r = subprocess.run(
+        [sys.executable, str(f)],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",          # 子进程万一输出别的编码，也不要崩
+        env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"),
+    )
     out = (r.stdout or "") + (r.stderr or "")
     print(out.rstrip())
     m = re.search(r"(\d+)/(\d+) 通过", out)

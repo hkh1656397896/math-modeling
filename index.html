@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
@@ -108,6 +108,7 @@
 <a class="nav3" href="#np-10">10. rng = np.random.default_rng(42)</a>
 <a class="nav4" href="#np-10-1">为什么它是对象而不是函数</a>
 <a class="nav4" href="#np-10-2">常用取样方法</a>
+<a class="nav4" href="#np-10-2c">为什么 random() 只给 0~1 的小数</a>
 <a class="nav4" href="#np-10-2b">抽出来的东西对不对</a>
 <a class="nav4" href="#np-10-3">新旧 API 对照</a>
 </nav>
@@ -667,6 +668,36 @@ rng.permutation(a)       # → ['甲' '丁' '乙' '丙']                  打乱
 <tr><td><code>integers(low, high, size)</code></td><td>下界、上界（不含）、个数</td><td>int</td><td>计数、编号、掷骰子</td></tr>
 <tr><td><code>choice(a, size, replace)</code></td><td>候选数组、个数、是否有放回</td><td>a 里的元素</td><td>抽样调查、划分训练/验证集</td></tr>
 <tr><td><code>permutation(n 或 a)</code></td><td>整数或数组</td><td>打乱后的副本</td><td>打乱顺序、bootstrap 重抽样</td></tr>
+</table>
+
+<h4 id="np-10-2c">为什么 random() 只给 0~1 的小数</h4>
+<p>因为 <code>random()</code> 的<strong>契约就是标准均匀分布</strong>：半开区间 [0,1)，类型 <code>float64</code>，永远取不到 1。它不是"随机数"的泛称，而是"<b>标准</b>均匀随机数"——所有其他区间的均匀分布都由它线性变换得到。</p>
+<pre><code>x = np.random.default_rng(1).random(100_000)
+x.min()        # → 1e-06
+x.max()        # → 0.999991
+(x &gt;= 1).sum() # → 0            ← 10 万个样本，一个到 1 的都没有
+x.dtype        # → float64</code></pre>
+
+<p><b>为什么定在 [0,1) 而不是"任意范围"：</b>因为 <code>uniform(a, b, n)</code> 就是 <code>a + (b-a)*random(n)</code>，没必要为每个区间单独造函数。</p>
+<pre><code>a, b = 60, 420
+man = a + (b - a) * np.random.default_rng(2).random(3)   # → [154.18 167.46 353.12]
+uni = np.random.default_rng(2).uniform(a, b, 3)          # → [154.18 167.46 353.12]
+np.allclose(man, uni)                                    # → True   ← 完全一样</code></pre>
+<div class="ok box">这也是概率论里的老套路：<b>U(0,1) 是分布的"母函数"</b>。逆变换法、Box–Muller 造正态、造指数分布，都是从它出发做变换。所以 numpy 把最底层的原语放在 [0,1) 上。</div>
+
+<p><b>参数 3 是"形状"，不是"范围"：</b></p>
+<pre><code>rng.random(3)        # → [0.637 0.270 0.041]     形状 (3,)   三个数
+rng.random((2, 3))   # → 2 行 3 列                形状 (2, 3) 六个数
+rng.random()         # → 0.6369                  标量
+rng.random() * 3     # → 1.9                     ← 一个数，放大到 [0,3)</code></pre>
+<div class="warn box"><b>最容易混的一行：</b><code>rng.random(3)</code> 是"抽 3 个数"，<code>rng.random()*3</code> 是"抽 1 个数再乘 3"。<b>3 在括号里是形状，在括号外是倍数。</b></div>
+
+<table>
+<tr><th>想要什么</th><th>写法</th><th>实测输出</th></tr>
+<tr><td>任意实数区间</td><td><code>rng.uniform(a, b, n)</code></td><td><code>uniform(60,420,3)</code> → <code>[396.63 353.71 60.99]</code></td></tr>
+<tr><td>整数</td><td><code>rng.integers(1, 7, 5)</code></td><td><code>[1 2 3 3 3]</code>（上界取不到）</td></tr>
+<tr><td>正态</td><td><code>rng.normal(170, 8, 3)</code></td><td><code>[164.14 165.65 167.47]</code></td></tr>
+<tr><td>按概率取 0/1</td><td><code>rng.random(n) &lt; 0.3</code></td><td>布尔数组，True 占约 30%</td></tr>
 </table>
 
 <h4 id="np-10-2b">抽出来的东西对不对：两个自检</h4>

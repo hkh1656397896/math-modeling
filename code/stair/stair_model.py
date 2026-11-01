@@ -65,3 +65,8 @@ V_mm3 = sum(ellipse_volume(PIT_A,PIT_B,depth) for depth in WEAR_DEPTH)
 v0_m3 = K_WEAR*LOAD_N*SLIP_M/HARDNESS_PA
 N = V_mm3*1e-9/v0_m3 
 print(f"V = {V_mm3:.0f}mm³ v₀ = {v0_m3:.3e}m³/次 N = {N:.3e}次")
+
+Q_PER_DAY = 110.0
+T = N/(365*Q_PER_DAY)       # 日均踩踏次数：先验假设，非计算数值
+print(f"T = {T:.1f}年")      # 式 (8)
+

@@ -113,6 +113,7 @@
 <a class="nav4" href="#np-10-3">新旧 API 对照</a>
 <a class="nav3" href="#np-11">11. np.exp：e 的 x 次方</a>
 <a class="nav3" href="#np-12">12. lognormal 到底在干什么</a>
+<a class="nav3" href="#np-13">13. round：四舍五入的三个坑</a>
 <a class="nav2" href="#mcm">十一、MCM 十年真题手册怎么用</a>
 <a class="nav3" href="#mcm-1">1. 它的定位：手册，不是教材</a>
 <a class="nav3" href="#mcm-2">2. 11 段代码：每段解决什么问题</a>
@@ -869,6 +870,55 @@ z = np.log(已有数据)                      # 已有数据也可以取对数
 <tr><td>数据里有负数</td><td>根本不能取对数，用正态或对称分布</td></tr>
 <tr><td>数据其实对称</td><td>硬套 lognormal 会人为造出右偏</td></tr>
 </table>
+
+<h3 id="np-13">13. round：四舍五入的三个坑</h3>
+<p>撞上它是在 00_warmup 的「10. 统计」那段：<code>print("mean =", round(data.mean(), 2))</code>。三个坑记在这里。</p>
+
+<h4 id="np-13-1">三种用法</h4>
+<pre><code>round(3.14159)        # → 3        不给 n 就取整，返回 int
+round(3.14159, 2)     # → 3.14     给 n 保留 n 位，返回 float
+round(99.8, 2)        # → 99.8     末尾 0 会被抹掉，<b>不是</b> 99.80
+np.round(np.array([1.2345, 2.3456, 3.4567]), 2)   # → [1.23 2.35 3.46]   数组要逐元素就
+</code></pre>
+
+<h4 id="np-13-2">坑一：它是「银行家舍入」，不是四舍五入</h4>
+<p>正好 .5 时<b>往偶数靠</b>，不往大靠：</p>
+<pre><code>round(0.5)   # → 0     不是 1
+round(1.5)   # → 2
+round(2.5)   # → 2     不是 3
+round(3.5)   # → 4
+round(4.5)   # → 4     不是 5
+</code></pre>
+<p>理由：避免大量 .5 全部向上时产生系统性偏大。真要「四舍五入」得用 <code>decimal</code> 模块或自己写。</p>
+
+<h4 id="np-13-3">坑二：2.675 舍成 2.67</h4>
+<pre><code>round(2.675, 2)   # → 2.67     不是 2.68
+</code></pre>
+<p>因为 2.675 在二进制浮点里实际存的是 2.67499999…，舍到两位自然往下。<b>不是 bug，是浮点的本性</b>。</p>
+
+<h4 id="np-13-4">坑三：round 不是格式化</h4>
+<pre><code>round(99.8, 2)     # → 99.8      值是 99.8，打印只一位
+f"{99.8:.2f}"      # → '99.80'   字符串，固定两位，用于显示/写表
+</code></pre>
+<table>
+<tr><th>需求</th><th>用哪个</th><th>原因</th></tr>
+<tr><td>还要继续算</td><td><code>round</code></td><td>仍是数字</td></tr>
+<tr><td>写进论文/表格、位数对齐</td><td>f-string <code>:.2f</code></td><td>保证两位，不会抹 0</td></tr>
+<tr><td>整个数组一起舍</td><td><code>np.round</code></td><td>逐元素，不用写循环</td></tr>
+</table>
+
+<h4 id="np-13-5">配套：那段代码里的三个统计函数</h4>
+<pre><code>data = np.random.default_rng(7).normal(100, 15, 10000)   # 均值100、标准差15、1万个
+
+round(data.mean(), 2)              # → 99.82      平均
+round(np.median(data), 2)          # → 99.8       排序后正中间那个
+round(np.percentile(data, 90), 2)  # → 118.89     第 90% 位置：90% 的数比它小
+
+counts, edges = np.histogram(data, bins=5)
+# counts → [ 177 2678 5524 1566   55]        每段几个数（合计 10000）
+# edges  → [ 45.1  68.3  91.4 114.6 137.8 160.9]   6 个界值 = 5 段，段宽 23.17
+</code></pre>
+<p>看 counts 就知道形状：中间两段装了 8202 个（82%），两头很少 —— 这就是「钟形」的数字证据。</p>
 
 <h2 id="mcm">十一、MCM 十年真题手册怎么用</h2>
 <p>材料：<code>D:\Program Files\qq\MCM十年真题_方法与代码_论文技巧.html</code>（685 行、11 段代码、9 章）。它是一份"比赛当天手册"，价值在<b>广度</b>和<b>骨架</b>，不在推导。</p>

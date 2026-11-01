@@ -112,6 +112,7 @@
 <a class="nav4" href="#np-10-2b">抽出来的东西对不对</a>
 <a class="nav4" href="#np-10-3">新旧 API 对照</a>
 <a class="nav3" href="#np-11">11. np.exp：e 的 x 次方</a>
+<a class="nav3" href="#np-12">12. lognormal 到底在干什么</a>
 </nav>
 
 <h2 id="env">一、环境：装一次，以后都用它</h2>
@@ -790,6 +791,76 @@ X = np.exp(Z)               # → [1.16457771 0.59452527 1.45531969 1.60044603 0
 np.log(X)                   # → [ 0.15235854 -0.51999205  0.3752256   0.47028236 -0.97551759]  回到 Z
 </code></pre>
 <p>所以 <code>lognormal(mean, sigma)</code> 内部干的事，就是&ldquo;抽正态 → 取 exp&rdquo;两步。</p>
+
+<h3 id="np-12">12. lognormal 到底在干什么</h3>
+<p>一句话：<b>用正态描述 x 的对数，再用 exp 生成非负、右偏的 x</b>。要的是 x，ln x 只是工具。</p>
+
+<h4 id="np-12-1">三层拆解（都是真实数字，seed=42）</h4>
+<table>
+<tr><th>#</th><th>z<sub>0</sub>（标准正态）</th><th>z = 0.5z<sub>0</sub>（= ln x）</th><th>x = e<sup>z</sup></th></tr>
+<tr><td>0</td><td>0.304717079754</td><td>0.152358539877</td><td><b>1.164577709136</b></td></tr>
+<tr><td>1</td><td>−1.039984106240</td><td>−0.519992053120</td><td><b>0.594525272572</b></td></tr>
+<tr><td>2</td><td>0.750451195806</td><td>0.375225597903</td><td><b>1.455319694659</b></td></tr>
+<tr><td>3</td><td>0.940564716391</td><td>0.470282358196</td><td><b>1.600446028477</b></td></tr>
+<tr><td>4</td><td>−1.951035188654</td><td>−0.975517594327</td><td><b>0.376997171458</b></td></tr>
+</table>
+<p>第 0 行手算：$0.304717 \times 0.5 = 0.152359$，$e^{0.152359} = 1.164578$。反过来 $\ln(1.1645777) = 0.1523585$。</p>
+
+<h4 id="np-12-2">对应的代码</h4>
+<pre><code>rng = np.random.default_rng(42)      # 定状态：这一步决定了下面所有数
+z0 = rng.normal(0, 1, 5)             # → [ 0.30471708 -1.03998411  0.7504512   0.94056472 -1.95103519]
+z  = 0.0 + 0.5 * z0                  # → [ 0.15235854 -0.51999205  0.3752256   0.47028236 -0.97551759]   ← 这个 z 就是 ln x
+x  = np.exp(z)                       # → [1.16457771 0.59452527 1.45531969 1.60044603 0.37699717]     ← 最终样本
+
+np.log(x)                            # → [ 0.15235854 -0.51999205  0.3752256   0.47028236 -0.97551759]   ← 回到 z
+</code></pre>
+<div class="ok box"><b>和 lognormal 的关系：</b><code>rng.lognormal(0, 0.5, 5)</code> 返回的正是上面第 4 行那个 <code>x</code>。<br>
+它内部就是 <code>exp(loc + scale * z0)</code> 一行——所以 <code>lognormal(...)</code> 与 <code>np.exp(normal(...))</code> 逐位相同（ULP 差全为 0）。</div>
+
+<h4 id="np-12-3">三个“为什么”</h4>
+<table>
+<tr><th>问题</th><th>答案</th></tr>
+<tr><td>为什么先抽正态？</td><td>定义只说“ln x 是正态”，要造它，只能从正态这个入口进。</td></tr>
+<tr><td>为什么乘 σ？</td><td>z<sub>0</sub> 的标准差是 1，要 ln x 的标准差是 σ，就乘 σ（sd(σz<sub>0</sub>) = σ）。</td></tr>
+<tr><td>为什么最后要 exp？</td><td>因为 z = ln x，所以 x = e<sup>z</sup>。这一步还顺手把数值变成全正。</td></tr>
+</table>
+<p>参数位置提醒：<code>lognormal(mean, sigma)</code> 的 <code>mean</code> 和 <code>sigma</code> 都是<b>对数尺度</b>上的（即 ln x 的均值和标准差），不是 x 的。</p>
+
+<h4 id="np-12-4">右偏是 exp 造成的</h4>
+<table>
+<tr><th>z</th><td>−2</td><td>−1</td><td>0</td><td>+1</td><td>+2</td></tr>
+<tr><th>e<sup>z</sup></th><td>0.135</td><td>0.368</td><td>1</td><td>2.718</td><td>7.389</td></tr>
+</table>
+<p>负方向被压向 0（−2 与 −1 只差 0.23），正方向被拉开（+1 与 +2 差 4.67）。<b>对称的 z 变出不对称的 x，长尾在右边。</b></p>
+
+<h4 id="np-12-5">两个方向：要 x 还是要 ln x</h4>
+<pre><code># 要 x（原尺度，mm / 元 / 年）
+x = rng.lognormal(mu, sigma, n)          # 一步到位
+x = np.exp(mu + sigma * rng.normal(0, 1, n))   # 拆开写，等于上面
+
+# 要 ln x（对数尺度，做统计用）
+z = rng.normal(mu, sigma, n)             # 不加 exp，直接就是 ln x
+z = np.log(已有数据)                      # 已有数据也可以取对数
+</code></pre>
+<div class="warn box"><b>加不加 exp，看你要哪个尺度：</b><br>
+· 要“磨损深度 0.37 mm”→ 用 <code>lognormal</code> / <code>exp</code>；<br>
+· 要“对数均值 −0.99”（做检验、回归、画 QQ 图）→ 用 <code>normal(mu, sigma)</code>。<br>
+· 绕一圈（exp 再 log）会有 1~2 ULP 的往返误差，可以忽略，但没必要多绕。</div>
+
+<h4 id="np-12-6">三处最容易搞反的地方</h4>
+<div class="bad box">
+<b>① 顺序：</b>不是“把 x 变成 ln x”，而是“从正态 z 生成 x”。ln x 是 x 的对数，不是加工的第一步。<br>
+<b>② 谁非负：</b>非负来自 <code>exp</code>，不是来自“取对数”。取对数反而把正数映射到可正可负。<br>
+<b>③ 谁右偏：</b>ln x（正态）<b>对称、可负</b>；x（lognormal）<b>非负、右偏</b>。别把两者对调。
+</div>
+
+<h4 id="np-12-7">什么时候不该用</h4>
+<table>
+<tr><th>情况</th><th>怎么办</th></tr>
+<tr><td>数据里有 0</td><td>ln 0 = −∞，直接崩；改 Gamma / Tweedie 或“零膨胀”模型</td></tr>
+<tr><td>数据里有负数</td><td>根本不能取对数，用正态或对称分布</td></tr>
+<tr><td>数据其实对称</td><td>硬套 lognormal 会人为造出右偏</td></tr>
+</table>
 
 <p class="meta" style="margin-top:30px">
 这份笔记只记“我踩过的东西”，不抄教程。所有数字都能在 <code>code/</code> 里跑出来。

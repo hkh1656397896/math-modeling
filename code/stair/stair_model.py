@@ -1,18 +1,20 @@
 # -*- coding: utf-8 -*-
-"""stair_model.py —— 楼梯磨损反演主模型（按讲义二 §5 重建）
-
-来源：D:\\Program Files\\qq\\楼梯建模_Python代码讲义_v2.html
-变量名严格按讲义 §3「符号对应表」：d→WEAR_DEPTH、a,b→PIT_A/PIT_B、
-K→K_WEAR、F→LOAD_N、s→SLIP_M、H→HARDNESS_PA、v₀→v0、T→T_years、q̄→q_per_day。
-
-进度（7 天表）：
-  Day 1  常量区 + ellipse_volume()          → 打印 V ≈ 50 894 mm³   ← 现在这里
-  Day 2  v0 = V / N（单次踩踏磨损）
-  Day 3  mc_use_years() 蒙特卡洛 → 使用年数分布
-  Day 4  date_from_years() + 反演 q̄
-  Day 5  gmm_peaks() + dp_segments()
-  Day 6  三指标 + 材料概率 + 汇总结论
-"""
+# stair_model.py —— 楼梯磨损反演主模型（按讲义二 §5 重建）
+# 来源：D:\Program Files\qq\楼梯建模_Python代码讲义_v2.html
+#
+# 符号 → 变量（讲义 §3）
+#    d     每级最大磨损深度 (mm)  → WEAR_DEPTH
+#    a, b  磨损椭圆半轴 (mm)      → PIT_A / PIT_B
+#    K     磨损系数 (无量纲)      → K_WEAR
+#    F     单次踩踏法向力 (N)     → LOAD_N
+#    s     单次滑移距离 (m)       → SLIP_M
+#    H     材料硬度 (Pa)          → HARDNESS_PA
+#    v₀    单次踩踏磨损体积 (m³)  → v0
+#    T     使用年数 (年)          → T_years
+#    q     日均踩踏次数 (次/天)   → q_per_day
+#
+# 进度：Day 1 常量+ellipse_volume ✅ ｜ Day 2 v0 与 N ｜ Day 3 蒙特卡洛
+#       Day 4 定年反演 q̄ ｜ Day 5 gmm_peaks/dp_segments ｜ Day 6 结论
 import math
 
 import numpy as np
@@ -55,36 +57,11 @@ SLIP_M = 0.03           # 单次踩踏滑移距离 s（m）≈ 3 cm
 HARDNESS_PA = 5.0e9     # 材料硬度 H（Pa）≈ 5 GPa（大理石/花岗岩量级）
 
 
-# ============================================================
-# 1. Day 1：单级台阶的磨损体积（今天唯一要写的代码）
-# ============================================================
+# 单级台阶踏面磨损坑的体积（mm³）
+# 参数：a_mm、b_mm 磨损椭圆半轴；d_mm 这一级的最大磨损深度
 def ellipse_volume(a_mm, b_mm, d_mm):
-    """一级台阶踏面上那个「中间最深、边缘趋零」的磨损坑，体积是多少（mm³）。
-    
-    参数
-    ----
-    a_mm, b_mm : float  磨损椭圆的两个半轴（mm）
-    d_mm       : float  这一级台阶的最大磨损深度（mm）
-    
-    返回
-    ----
-    float  体积（mm³）
-
-    公式在讲义二 §5.2 —— **注意式 (4) 前面有个系数**，坑不是平底盒子。
-    """
-    return 0.5 * np.pi * a_mm * b_mm * d_mm
-
-
-# ============================================================
-# 2. 主程序（这部分已写好，不用改；它负责逐级累加并打印验收数字）
-# ============================================================
-def main():
-    # 逐级算体积再累加（Day 1 只到这一步；Day 2 再往下算 v0 和 N）
-    V = sum(ellipse_volume(PIT_A, PIT_B, d) for d in WEAR_DEPTH)
-
-    print(f"Σd = {WEAR_DEPTH.sum():.1f} mm")
-    print(f"V  = {V:.0f} mm³   （讲义验收：50 894）")
-
-
-if __name__ == "__main__":
-    main()
+    return 0.5 * np.pi * a_mm * b_mm * d_mm   # 式 (4)：πab·(d/2)，别漏 1/2
+V_mm3 = sum(ellipse_volume(PIT_A,PIT_B,depth) for depth in WEAR_DEPTH)
+v0_m3 = K_WEAR*LOAD_N*SLIP_M/HARDNESS_PA
+N = V_mm3*1e-9/v0_m3 
+print(f"V = {V_mm3:.0f}mm³ v₀ = {v0_m3:.3e}m³/次 N = {N:.3e}次")

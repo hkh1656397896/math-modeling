@@ -111,6 +111,7 @@
 <a class="nav4" href="#np-10-2c">为什么 random() 只给 0~1 的小数</a>
 <a class="nav4" href="#np-10-2b">抽出来的东西对不对</a>
 <a class="nav4" href="#np-10-3">新旧 API 对照</a>
+<a class="nav3" href="#np-11">11. np.exp：e 的 x 次方</a>
 </nav>
 
 <h2 id="env">一、环境：装一次，以后都用它</h2>
@@ -733,6 +734,62 @@ d = rng.integers(1, 7, 600_000)
 ① 种子一样但<b>调用次数/顺序不同</b>，拿到的数也不同——序列是"流式"的，不是按下标查表。<br>
 ② 同一个 rng 连调两次 <code>random(3)</code> 得到的两组数<b>不一样</b>（见上面输出）；要每次重来，就重新 <code>default_rng(42)</code>。
 </div>
+
+<h3 id="np-11">11. np.exp：e 的 x 次方</h3>
+<p>看到 <code>np.exp(...)</code> 就读成 &ldquo;e 的&hellip;次方&rdquo;。它不是新运算，就是指数函数。</p>
+<pre><code>np.exp(0)    # → 1.0
+np.exp(1)    # → 2.718281828459045      ← 这就是 e
+np.exp(-1)   # → 0.36787944117144233
+np.exp(2)    # → 7.38905609893065       ← e × e
+np.exp(np.array([0, 1, 2]))   # → [1.         2.71828183  7.3890561 ]  逐元素
+</code></pre>
+
+<h4 id="np-11-1">e 是从哪来的：一个极限</h4>
+<pre><code>(1 + 1/n) ** n
+n=1          # → 2.0000000000
+n=10         # → 2.5937424601
+n=100        # → 2.7048138294
+n=1000       # → 2.7169239322
+n=100000     # → 2.7182682372
+n=100000000  # → 2.7182817983      ← 越来越靠近 e = 2.718281828…
+</code></pre>
+<p>极限章里的 <code>lim(1+1/n)^n = e</code> 就是它。e 的特殊之处只有一个：<b>它的导数等于自己</b>，(e<sup>x</sup>)′ = e<sup>x</sup>。</p>
+
+<h4 id="np-11-2">六条性质，够用</h4>
+<table>
+<tr><th>性质</th><th>代码</th><th>结果</th></tr>
+<tr><td>e<sup>0</sup> = 1</td><td><code>np.exp(0)</code></td><td><code>1.0</code></td></tr>
+<tr><td>e<sup>a+b</sup> = e<sup>a</sup>·e<sup>b</sup></td><td><code>np.exp(3) == np.exp(1)*np.exp(2)</code></td><td><code>True</code></td></tr>
+<tr><td>e<sup>−x</sup> = 1/e<sup>x</sup></td><td><code>np.exp(-1)</code></td><td><code>0.36787944…</code></td></tr>
+<tr><td>ln(e<sup>x</sup>) = x</td><td><code>np.log(np.exp(3))</code></td><td><code>3.0</code></td></tr>
+<tr><td>e<sup>ln x</sup> = x</td><td><code>np.exp(np.log(2))</code></td><td><code>2.0</code></td></tr>
+<tr><td>永远为正，x→−∞ 时趋近 0</td><td><code>np.exp(-50)</code></td><td><code>1.9e-22</code></td></tr>
+</table>
+<p>最后一条的意思是：<b>它永远大于 0，也永远碰不到 0</b>。所以 <code>exp</code> 常用来把&ldquo;可正可负的数&rdquo;变成&ldquo;正数&rdquo;（比如概率、强度）。</p>
+
+<h4 id="np-11-3">np.exp 和 np.e**x 结果一样，但请写 exp</h4>
+<pre><code>x = np.array([0.5, 1.5, 2.5])
+np.exp(x)                 # → [ 1.64872127  4.48168907 12.18249396]
+np.e**x                   # → [ 1.64872127  4.48168907 12.18249396]
+np.allclose(np.exp(x), np.e**x)   # → True
+</code></pre>
+<p>数学上一样，工程上 <code>exp</code> 更好：专函数实现、边界处理更稳、还支持复数。所以约定俗成写 <code>np.exp</code>，<code>np.e**x</code> 只在手算演示时出现。</p>
+
+<h4 id="np-11-4">会溢出，也会下溢</h4>
+<pre><code>np.exp(1000)    # → inf    并警告 RuntimeWarning: overflow encountered in exp
+np.exp(-1000)   # → 0.0    下溢：数学上是正数，只是小到存不下
+</code></pre>
+<div class="warn box"><b>这一点在做似然/贝叶斯时会撞上：</b><br>
+一堆概率连乘，很快就下溢成 0。标准做法是先<b>取对数</b>变成连加（<code>np.log</code> + <code>sum</code>），需要还原概率时再 <code>np.exp</code>；如果还要归一化，就用 <code>logsumexp</code>（后面的课再讲，现在知道有这么个东西就行）。</div>
+
+<h4 id="np-11-5">它和 lognormal 的关系</h4>
+<p>前面那条 <code>X = np.exp(Z)</code> 就是它：<b>正态抽出来的 Z 可正可负，取 exp 之后全变成正数、而且右偏</b> —— 这正是 lognormal 的来历。</p>
+<pre><code>rng = np.random.default_rng(42)
+Z = rng.normal(0, 0.5, 5)   # → [ 0.15235854 -0.51999205  0.3752256   0.47028236 -0.97551759]
+X = np.exp(Z)               # → [1.16457771 0.59452527 1.45531969 1.60044603 0.37699717]
+np.log(X)                   # → [ 0.15235854 -0.51999205  0.3752256   0.47028236 -0.97551759]  回到 Z
+</code></pre>
+<p>所以 <code>lognormal(mean, sigma)</code> 内部干的事，就是&ldquo;抽正态 → 取 exp&rdquo;两步。</p>
 
 <p class="meta" style="margin-top:30px">
 这份笔记只记“我踩过的东西”，不抄教程。所有数字都能在 <code>code/</code> 里跑出来。

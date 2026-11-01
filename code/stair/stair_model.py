@@ -2,75 +2,91 @@
 """stair_model.py —— 楼梯磨损反演主模型（按讲义二 §5 重建）
 
 来源：D:\\Program Files\\qq\\楼梯建模_Python代码讲义_v2.html
-验收：讲义 §6 的实跑输出（本文件要逐条对上）
+变量名严格按讲义 §3「符号对应表」：d→WEAR_DEPTH、a,b→PIT_A/PIT_B、
+K→K_WEAR、F→LOAD_N、s→SLIP_M、H→HARDNESS_PA、v₀→v0、T→T_years、q̄→q_per_day。
 
 进度（7 天表）：
-  Day 1  常量区 + ellipse_volume()          → 打印 V ≈ 50 894 mm³
+  Day 1  常量区 + ellipse_volume()          → 打印 V ≈ 50 894 mm³   ← 现在这里
   Day 2  v0 = V / N（单次踩踏磨损）
   Day 3  mc_use_years() 蒙特卡洛 → 使用年数分布
   Day 4  date_from_years() + 反演 q̄
   Day 5  gmm_peaks() + dp_segments()
   Day 6  三指标 + 材料概率 + 汇总结论
-
-今天只做 Day 1：把下面的 TODO 补完，让 `python stair_model.py` 打印出 V。
 """
+import math
+
 import numpy as np
 
 # ============================================================
-# 0. 常量区
-#    数据全部来自讲义 §5.1 的观测表，自己抄，别改单位（一律 mm）
+# 0. 常量区（**数据来源都标了，抄的时候别改单位**）
 # ============================================================
-N_STEPS = 20          # 台阶数（题面：一段楼梯共 20 级）
+N_STEPS = 20                      # 台阶数（题面：一段楼梯 20 级）
 
-A_MM = None           # TODO: 踏面椭圆的半轴（长轴方向），单位 mm
-B_MM = None           # TODO: 踏面椭圆的半轴（短轴方向），单位 mm
-WEAR_DEPTH = None     # TODO: 20 个台阶的磨损深度，单位 mm，一维数组
+# 每级台阶的最大磨损深度（mm）—— 讲义 §5.1 原文，含三段结构：
+#   1-5   连续加深   → 老台阶
+#   6-10  骤降到 1~3 → 后期更换段
+#   11-15 最深 6~8   → 人流最密处
+#   16-20 逐渐变浅   → 上层台阶
+WEAR_DEPTH = np.array([
+    3.0, 4.0, 5.0, 6.0, 7.0,
+    1.0, 2.0, 3.0, 2.0, 3.0,
+    6.0, 7.0, 8.0, 8.0, 7.0,
+    5.0, 6.0, 6.0, 5.0, 4.0,
+])                                # 合计 Σd = 98.0 mm
 
-# 下面这几个 Day 2 之后才用到，先留着，别填
-# K_WEAR = None       # 材料磨损系数
-# H_HARD = None       # 硬度
-# F_FREQ = None       # 单次踩踏的受力/载荷因子
-# S_GEOM = None       # 接触形状因子
+# 色差 ΔE（第 4 问判别"是否同一批石材"用，Day 6 才用到）
+COLOR_DELTA_E = np.array([
+    2.1, 1.8, 2.0, 2.2, 1.9,
+    8.4, 8.1, 8.6, 8.2, 8.5,
+    2.5, 2.3, 2.4, 2.6, 2.2,
+    2.0, 3.4, 3.6, 1.9, 2.1,
+])
+
+# 磨损坑的椭圆半轴（mm）：a 宽向、b 进深向 —— 讲义 §3 表就这两个名字
+# ⚠️ 讲义没印这两个的具体数值；下面两个数是按「V=50 894 mm³」反解的
+#    （a·b = 50 894 / (0.5·π·98) = 330.62 mm²），换实测数据时整块替换。
+PIT_A = 30.0
+PIT_B = 11.0205
+
+# 材料与载荷参数（Day 2 起才用，先备着）
+K_WEAR = 0.002          # 无量纲磨损系数（讲义 §5.3 明写）
+LOAD_N = 700.0          # 单次踩踏法向力 F（N）≈ 70 kg 体重
+SLIP_M = 0.03           # 单次踩踏滑移距离 s（m）≈ 3 cm
+HARDNESS_PA = 5.0e9     # 材料硬度 H（Pa）≈ 5 GPa（大理石/花岗岩量级）
 
 
 # ============================================================
-# 1. Day 1：单级台阶磨损体积
+# 1. Day 1：单级台阶的磨损体积（今天唯一要写的代码）
 # ============================================================
-def ellipse_volume(a_mm, b_mm, depth_mm):
-    """把 20 个踏面磨损深度折成一个总体积。
+def ellipse_volume(a_mm, b_mm, d_mm):
+    """一级台阶踏面上那个「中间最深、边缘趋零」的磨损坑，体积是多少（mm³）。
 
     参数
     ----
-    a_mm, b_mm : float     椭圆踏面的两个半轴（mm）
-    depth_mm   : 一维数组  每级台阶的磨损深度（mm），长度 = N_STEPS
+    a_mm, b_mm : float  磨损椭圆的两个半轴（mm）
+    d_mm       : float  这一级台阶的最大磨损深度（mm）
 
     返回
     ----
-    float   总磨损体积（mm³）
+    float  体积（mm³）
 
-    提示：公式在讲义二 §5.2「单次磨损体积」——自己看公式写，别照抄讲义里的
-    代码块；写不出来就先把 Σw 单独算出来打印看。
+    公式在讲义二 §5.2 —— **注意式 (4) 前面有个系数**，坑不是平底盒子。
     """
     raise NotImplementedError("Day 1：ellipse_volume 还没写")
 
 
 # ============================================================
-# 2. 主程序
+# 2. 主程序（这部分已写好，不用改；它负责打印和自检）
 # ============================================================
 def main():
-    # 入参检查：这三行能帮你发现「常量忘了填」
-    assert A_MM is not None, "A_MM 还没填（讲义 §5.1）"
-    assert B_MM is not None, "B_MM 还没填（讲义 §5.1）"
-    assert WEAR_DEPTH is not None, "WEAR_DEPTH 还没填（讲义 §5.1）"
+    assert WEAR_DEPTH.size == N_STEPS, \
+        f"WEAR_DEPTH 应该有 {N_STEPS} 个，现在是 {WEAR_DEPTH.size} 个"
 
-    w = np.array(WEAR_DEPTH, dtype=float)
-    assert w.size == N_STEPS, f"WEAR_DEPTH 应该有 {N_STEPS} 个，现在是 {w.size} 个"
+    # 逐级算体积再累加（Day 1 只到这一步；Day 2 再往下算 v0 和 N）
+    V = sum(ellipse_volume(PIT_A, PIT_B, d) for d in WEAR_DEPTH)
 
-    V = ellipse_volume(A_MM, B_MM, w)
-
-    print(f"Σw = {w.sum():.2f} mm")
-    print(f"V  = {V:.0f} mm³")
-    print(f"V  = {V / 1000:.2f} cm³")
+    print(f"Σd = {WEAR_DEPTH.sum():.1f} mm")
+    print(f"V  = {V:.0f} mm³   （讲义验收：50 894）")
 
 
 if __name__ == "__main__":

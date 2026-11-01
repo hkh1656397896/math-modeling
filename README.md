@@ -10,11 +10,18 @@
 |---|---|
 | `index.html` | 笔记网页：环境 / numpy 最小集 / 楼梯算例 / 易错点 / 报错速查 / 路线 |
 | `code/numpy_basics/` | numpy 五课 25 题（00 热身 + 01~05 填空），带断言验收 |
+| `requirements.txt` | 依赖清单（含 pulp 必须钉 3.x 的原因） |
 | `code/stair/` | 楼梯建造年代那道题的补充脚本 `stair_extra.py`（误差传播 / 衰减剖面 / T₂ 区间 / 区间表） |
 
 ## 环境
 
-Python 3.12 + numpy 2.5.4 · scipy 1.18.1 · matplotlib 3.11.2 · pandas 3.1.0 · pulp 3.3.2
+Python 3.12 + numpy 2.5.4 · scipy 1.18.1 · matplotlib 3.11.2 · pandas 3.1.0 · pulp 3.3.2 · statsmodels 0.15.0 · scikit-learn 1.9.1 · networkx 3.7
+
+一键装依赖（版本见 `requirements.txt`）：
+
+```
+C:\Users\Lenovo\Desktop\Python作业\数模练习\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
 
 虚拟环境在 `C:\Users\Lenovo\Desktop\Python作业\数模练习\.venv`（不进仓库），跑法：
 

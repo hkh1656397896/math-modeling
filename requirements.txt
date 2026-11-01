@@ -1,0 +1,19 @@
+# 数学建模学习笔记 · 运行依赖
+# Python 3.12（虚拟环境：C:\Users\Lenovo\Desktop\Python作业\数模练习\.venv）
+#
+# 安装：
+#   C:\Users\Lenovo\Desktop\Python作业\数模练习\.venv\Scripts\python.exe -m pip install -r requirements.txt
+# 国内加速可加：-i https://pypi.tuna.tsinghua.edu.cn/simple
+
+numpy==2.5.4
+scipy==1.18.1
+pandas==3.1.0
+matplotlib==3.11.2
+
+# 注意：pulp 4.x 重写了 API，LpVariable(..., lowBound=0) 会报 TypeError，
+# 必须钉在 3.x（本机 3.3.2 实测可跑）。
+pulp==3.3.2
+
+statsmodels==0.15.0
+scikit-learn==1.9.1
+networkx==3.7

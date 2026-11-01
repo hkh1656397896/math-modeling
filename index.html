@@ -892,12 +892,12 @@ z = np.log(已有数据)                      # 已有数据也可以取对数
 <tr><td>4.1</td><td>中文字体</td><td>图里中文全是方框</td><td><code>plt.rcParams['font.sans-serif']</code></td><td>✔</td></tr>
 <tr><td>4.2</td><td>读数据 + 描述统计</td><td>拿到数据先看规模、缺失、相关性</td><td><code>read_csv / describe / isna / corr</code></td><td>✔</td></tr>
 <tr><td>4.3</td><td>LP / MILP</td><td>资源分配、排班、选址、"开不开"这类 0-1 决策</td><td><code>pulp.LpProblem / LpVariable / solve</code></td><td>✔ 3.3.2</td></tr>
-<tr><td>4.4</td><td>回归 + 诊断</td><td>哪个因素显著、有没有多重共线、残差是否正常</td><td><code>sm.OLS().fit() / VIF</code></td><td>✘ statsmodels</td></tr>
-<tr><td>4.5</td><td>ARIMA</td><td>有历史序列，要外推未来若干期</td><td><code>ARIMA(...).fit().get_forecast</code></td><td>✘ statsmodels</td></tr>
-<tr><td>4.6</td><td>KMeans + PCA</td><td>无标签分组（客户分群）、降维看结构</td><td><code>KMeans / silhouette / PCA</code></td><td>✘ sklearn</td></tr>
-<tr><td>4.7</td><td>随机森林 + CV</td><td>非线性预测、要"哪个特征最重要"</td><td><code>RandomForest / cross_val_score</code></td><td>✘ sklearn</td></tr>
+<tr><td>4.4</td><td>回归 + 诊断</td><td>哪个因素显著、有没有多重共线、残差是否正常</td><td><code>sm.OLS().fit() / VIF</code></td><td>✔ 0.15.0</td></tr>
+<tr><td>4.5</td><td>ARIMA</td><td>有历史序列，要外推未来若干期</td><td><code>ARIMA(...).fit().get_forecast</code></td><td>✔ 0.15.0</td></tr>
+<tr><td>4.6</td><td>KMeans + PCA</td><td>无标签分组（客户分群）、降维看结构</td><td><code>KMeans / silhouette / PCA</code></td><td>✔ 1.9.1</td></tr>
+<tr><td>4.7</td><td>随机森林 + CV</td><td>非线性预测、要"哪个特征最重要"</td><td><code>RandomForest / cross_val_score</code></td><td>✔ 1.9.1</td></tr>
 <tr><td>4.8</td><td><b>蒙特卡洛敏感性</b></td><td>参数不确定 → 报区间（几乎所有题的"敏感性分析"）</td><td><code>default_rng / lognormal / percentile</code></td><td>✔</td></tr>
-<tr><td>4.9</td><td>networkx</td><td>网络结构：最短路、最小生成树、谁是枢纽</td><td><code>shortest_path / betweenness / pagerank</code></td><td>✘ networkx</td></tr>
+<tr><td>4.9</td><td>networkx</td><td>网络结构：最短路、最小生成树、谁是枢纽</td><td><code>shortest_path / betweenness / pagerank</code></td><td>✔ 3.7</td></tr>
 <tr><td>4.10</td><td>solve_ivp</td><td>传播/增长类常微分方程（SIR、Logistic）</td><td><code>solve_ivp</code></td><td>✔ scipy</td></tr>
 <tr><td>4.11</td><td>误差棒 / 双轴图</td><td>论文级图表：带不确定度的观测、两个量纲同图</td><td><code>errorbar / twinx</code></td><td>✔</td></tr>
 </table>
@@ -944,7 +944,7 @@ z = np.log(已有数据)                      # 已有数据也可以取对数
 <h3 id="mcm-6">6. 四个坑</h3>
 <div class="bad box">
 <b>① 4.3 的 PuLP 代码在 4.x 会崩：</b><code>LpVariable(..., lowBound=0)</code> 在 pulp 4.x 报 <code>TypeError</code>（API 重写）。本机钉的是 <b>3.3.2</b>，能跑；升级前先看版本。<br>
-<b>② 缺三个库：</b><code>statsmodels</code>（4.4/4.5）、<code>sklearn</code>（4.6/4.7）、<code>networkx</code>（4.9）都没装，用前 <code>pip install</code>。<br>
+<b>② 三个库已装好（2026-11-01）：</b><code>statsmodels 0.15.0</code>（4.4/4.5）、<code>scikit-learn 1.9.1</code>（4.6/4.7）、<code>networkx 3.7</code>（4.9）。装之前要留意它们的依赖会连带升级（这次带了 patsy / formulaic / joblib 等 8 个包）。<br>
 <b>③ AHP/TOPSIS 只有公式：</b>AHP 缺一致性检验步骤（求 λmax → CI → CR&lt;0.1 才算通过），TOPSIS 缺"正向化 + 归一化"，直接抄会排出错的序。<br>
 <b>④ A 类题是空白：</b>手册对你最像的题型没有方法内容，别指望它教你做磨损反演。
 </div>

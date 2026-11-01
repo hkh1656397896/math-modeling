@@ -114,6 +114,7 @@
 <a class="nav3" href="#np-11">11. np.exp：e 的 x 次方</a>
 <a class="nav3" href="#np-12">12. lognormal 到底在干什么</a>
 <a class="nav3" href="#np-13">13. round：四舍五入的三个坑</a>
+<a class="nav3" href="#np-14">14. np.histogram：直方图的数字部分</a>
 <a class="nav2" href="#mcm">十一、MCM 十年真题手册怎么用</a>
 <a class="nav3" href="#mcm-1">1. 它的定位：手册，不是教材</a>
 <a class="nav3" href="#mcm-2">2. 11 段代码：每段解决什么问题</a>
@@ -919,6 +920,75 @@ counts, edges = np.histogram(data, bins=5)
 # edges  → [ 45.1  68.3  91.4 114.6 137.8 160.9]   6 个界值 = 5 段，段宽 23.17
 </code></pre>
 <p>看 counts 就知道形状：中间两段装了 8202 个（82%），两头很少 —— 这就是「钟形」的数字证据。</p>
+
+<h3 id="np-14">14. np.histogram：直方图的数字部分</h3>
+<p>一句话：<b>把数据数到一组相邻箱子里，返回「每箱几个」和「边界在哪」</b>。就是直方图背后的数字。</p>
+
+<h4 id="np-14-1">返回值：两个数组，错位一格</h4>
+<pre><code>data = np.random.default_rng(7).normal(100, 15, 10000)
+counts, edges = np.histogram(data, bins=5)
+
+counts   # → [ 177 2678 5524 1566   55]             长度 5 = bins
+edges    # → [ 45.0838  68.2518  91.4199 114.588 137.756 160.9241]   长度 6 = bins+1
+</code></pre>
+<pre><code>edges:  45.08   68.25   91.42  114.59  137.76  160.92
+          └──段0──┘└──段1──┘└──段2──┘└──段3──┘└─段4─┘
+counts:    177     2678     5524     1566      55
+</code></pre>
+<p>第 i 个箱子 = <code>[edges[i], edges[i+1])</code>。</p>
+
+<h4 id="np-14-2">bins=5 是怎么切的</h4>
+<pre><code>data.min() = 45.0838   data.max() = 160.9241
+段宽 = (160.9241 - 45.0838) / 5 = 23.1681
+</code></pre>
+<p>箱子<b>贴着数据的最小/最大值</b>，不是从 0 开始、也不是整数边界。要整数边界就把 <code>bins</code> 传成数组。</p>
+
+<h4 id="np-14-3">逐段验算（和手工数的一致）</h4>
+<table>
+<tr><th>段</th><th>区间</th><th>个数</th><th>占比</th><th>段内中位</th></tr>
+<tr><td>0</td><td>[45.08, 68.25)</td><td>177</td><td>1.8%</td><td>64.70</td></tr>
+<tr><td>1</td><td>[68.25, 91.42)</td><td>2678</td><td>26.8%</td><td>84.39</td></tr>
+<tr><td>2</td><td>[91.42, 114.59)</td><td>5524</td><td><b>55.2%</b></td><td>102.08</td></tr>
+<tr><td>3</td><td>[114.59, 137.76)</td><td>1566</td><td>15.7%</td><td>120.36</td></tr>
+<tr><td>4</td><td>[137.76, 160.92]</td><td>55</td><td>0.6%</td><td>140.57</td></tr>
+</table>
+<p>用 <code>(data &gt;= lo) &amp; (data &lt; hi)</code> 一段段数，结果与 <code>counts</code> 完全一致。<b>占比那一列就是直方图归一化后的纵轴。</b></p>
+
+<h4 id="np-14-4">和 plt.hist 的分工</h4>
+<table>
+<tr><th>函数</th><th>给你什么</th><th>用在哪</th></tr>
+<tr><td><code>np.histogram</code></td><td><b>数字</b>（counts + edges）</td><td>写进表、继续算（拟合、找峰）</td></tr>
+<tr><td><code>plt.hist</code></td><td><b>图</b></td><td>论文里给读者看</td></tr>
+</table>
+
+<h4 id="np-14-5">四个常用参数</h4>
+<pre><code>np.histogram(data, bins=5)                            # 均分 5 段（最常用）
+np.histogram(data, bins=[0, 68, 91, 100, 115, 200])   # 自己给边界
+# → counts [ 169 2598 2281 3402 1550]   edges [0 68 91 100 115 200]
+np.histogram(data, bins="auto")                       # 自动定段数（这里 62 段）
+np.histogram(data, bins=5, range=(70, 130))           # 只看这个区间 → 合计 9537
+np.histogram(data, bins=5, density=True)              # 变密度，各段面积合计 1.0
+np.histogram(data, bins=5, weights=np.ones(len(data))*0.5)   # 加权计数
+</code></pre>
+<p>自定边界的好处是<b>可解释</b>：“低于 68 偏矮 / 68–91 中下 / 91–100 中等……”比 45.08–68.25 这种怪数字好讲。</p>
+
+<h4 id="np-14-6">四个坑</h4>
+<div class="bad box">
+<b>① 给了 range，区间外的点被丢掉：</b><code>range=(70,130)</code> 时合计只有 9537（463 个落在外面），不是 10000。<br>
+<b>② 有 NaN 会直接报错：</b><code>ValueError: autodetected range of [nan, nan] is not finite</code>。修法两种：给 <code>range=</code>（NaN 被丢，合计 9990），或先 <code>data[~np.isnan(data)]</code>。<br>
+<b>③ 边界归属左闭右开，只有最后一箱右端闭合：</b><code>np.histogram([0,1,2,3,4], bins=[0,2,4])</code> → counts <code>[2 3]</code>，即 [0,2) 收 0,1；[2,4] 收 2,3,4。正好在边界上的数落到<b>右边</b>那个箱子。<br>
+<b>④ edges 是浮点：</b>可能带 1e-16 的尾巴，别用 <code>==</code>，要比较就用 <code>np.isclose</code>。
+</div>
+
+<h4 id="np-14-7">怎么“读”一个直方图</h4>
+<p>拿到 counts 后看三件事：</p>
+<table>
+<tr><th>看什么</th><th>本例答案</th><th>说明</th></tr>
+<tr><td>哪一段最大</td><td>91.4–114.6，占 55%</td><td>数据集中在哪里</td></tr>
+<tr><td>两边是否对称</td><td>左 26.8% vs 右 15.7%</td><td>不对称，<b>右尾略长</b></td></tr>
+<tr><td>两端有多少</td><td>1.8% 和 0.6%</td><td>没有明显离群</td></tr>
+</table>
+<p>再和 <code>np.percentile(data, 90) = 118.89</code> 对一下：它正好落在第 4 段（114.59–137.76）里，两个工具互相验证。</p>
 
 <h2 id="mcm">十一、MCM 十年真题手册怎么用</h2>
 <p>材料：<code>D:\Program Files\qq\MCM十年真题_方法与代码_论文技巧.html</code>（685 行、11 段代码、9 章）。它是一份"比赛当天手册"，价值在<b>广度</b>和<b>骨架</b>，不在推导。</p>

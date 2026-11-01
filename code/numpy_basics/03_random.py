@@ -36,46 +36,46 @@ def check(name, fn, hint):
 def q1():
     """固定种子后，两次生成的随机数必须一模一样。"""
     rng = np.random.default_rng(42)          # 示例：现代写法的随机数生成器
-    a = rng.normal(0, 1, 10)
-    rng2 = todo()
+    a = rng.normal(0,1,10)
+    rng2 = np.random.default_rng(42).normal(0,1,10)    
     assert np.allclose(a, rng2), "两个序列不一样：种子要一模一样"
 
 
 def q2():
-    """lognormal(mean=0, sigma=0.5) 的中位数应该 ≈ 1（不是 0）。"""
+    """lognormal(mean=0, sigma=0.5) 抽 10000 个，中位数应该 ≈ 1（不是 0）。"""
     rng = np.random.default_rng(1)
-    s = todo()
-    med = todo()
+    s = rng.lognormal(mean=0, sigma=0.5, size=10_000)
+    med = np.median(s)
     assert 0.9 < med < 1.1, f"中位数应接近 1，你得到 {med}"
 
 
 def q3():
     """uniform(0,1) 抽 1000 个，均值应该 ≈ 0.5。"""
     rng = np.random.default_rng(2)
-    u = todo()
-    m = todo()
+    u = rng.uniform(0,1,1000)
+    m = np.mean(u)
     assert 0.45 < m < 0.55, f"均值应接近 0.5，你得到 {m}"
 
 
 def q4():
     """陷阱现场：mean 参数是**对数**的均值。
 
-    np.random.lognormal(mean=2e-6) 的中位数 ≈ 1，不是 2e-6 —— 这是讲义二 5.3.1
+    各抽 10000 个：np.random.lognormal(mean=2e-6) 的中位数 ≈ 1，不是 2e-6 —— 讲义二 5.3.1
     讲的那个"把 K 放大 500 倍"的坑。正确写法是先取对数。
     """
     rng = np.random.default_rng(3)
-    wrong = todo()
+    wrong = np.median(rng.lognormal(mean=2e-6, size=10_000))
     rng2 = np.random.default_rng(3)
-    right = todo()
+    right = np.median(rng2.lognormal(mean=np.log(2e-6), size=10_000))
     assert 0.9 < wrong < 1.1, f"错写法的中位数应接近 1，你得到 {wrong}"
     assert 1e-7 < right < 1e-5, f"对写法的中位数应接近 2e-6，你得到 {right}"
 
 
 def q5():
-    """用 lognormal 造 5000 个使用年数，问 90% 分位落在哪个量级。"""
+    """使用年数 ~ lognormal(mean=ln150, sigma=0.5)，抽 5000 个，90% 分位应落在几百年级别。"""
     rng = np.random.default_rng(5)
-    years = todo()
-    p90 = todo()
+    years = rng.lognormal(mean=np.log(150), sigma=0.5, size=5000)   # 中位数 e^(ln150)=150 年
+    p90 = np.percentile(years,90)
     assert 200 < p90 < 800, f"90% 分位应在几百年级别，你得到 {p90}"
 
 

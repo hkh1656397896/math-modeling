@@ -36,35 +36,35 @@ def check(name, fn, hint):
 def q1():
     """1~100 的平方和 = 338350。"""
     x = np.arange(1, 101)
-    s = todo()
+    s = (x**2).sum()
     assert int(s) == 338350, f"该是 338350，你得到 {s}"
 
 
 def q2():
     """1~100 里 3 的倍数有几个？答案 33。"""
     x = np.arange(1, 101)
-    n = todo()
+    n = x[x%3==0].size
     assert int(n) == 33, f"该是 33，你得到 {n}"
 
 
 def q3():
     """sqrt(x) > 5 的元素有几个？答案 75。"""
     x = np.arange(1, 101)
-    n = todo()
+    n = x[np.sqrt(x)>5].size
     assert int(n) == 75, f"该是 75，你得到 {n}"
 
 
 def q4():
     """把小于 50 的值置 0，其余不变，再求和 = 3825。"""
     x = np.arange(1, 101)
-    s = todo()
+    s = x[x>=50].sum()
     assert int(s) == 3825, f"该是 3825，你得到 {s}"
 
 
 def q5():
     """计算 sum((x+1)^2)，x 取 1~100，答案 348550。"""
     x = np.arange(1, 101)
-    s = todo()
+    s = ((x+1)**2).sum()
     assert int(s) == 348550, f"该是 348550，你得到 {s}"
 
 

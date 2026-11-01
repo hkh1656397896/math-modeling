@@ -36,7 +36,7 @@ def check(name, fn, hint):
 def q1():
     """造出 1~20 的数组，取出第 3~7 个（含 3 和 7），求和 = 25。"""
     a = np.arange(1, 21)                       # 示例：这一行已经写好了
-    b = a[3:8]
+    b = a[2:7]
     assert int(b.sum()) == 25, f"该是 25，你得到 {b.sum()}"
 
 

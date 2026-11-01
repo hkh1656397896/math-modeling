@@ -49,14 +49,14 @@ def q1():
     """for 循环版：每级体积 = π·a·b·w，总和 V。"""
     total = 0.0
     for w in W:
-        total += todo()
+        total += np.pi*A_MM*B_MM*w
     assert 290000 < total < 310000, f"该在 30 万 mm³ 上下（20 级之和），你得到 {total}"
 
 
 def q2():
     """numpy 版：把同一个 V 用一行算出来，两版必须相等。"""
-    w = todo()
-    v_np = todo()
+    w = (np.pi*A_MM*B_MM*np.array(W)).sum()
+    v_np = w
     v_loop = sum(np.pi * A_MM * B_MM * x for x in W)
     assert abs(v_np - v_loop) < 1e-9, f"两版不一致：{v_np} vs {v_loop}"
 
@@ -64,8 +64,8 @@ def q2():
 def q3():
     """单次磨损 v0 = V/N，再算使用年数 T = N/(365·q̄)，应 ≈ 150 年。"""
     V = np.pi * A_MM * B_MM * np.array(W).sum()
-    v0 = todo()
-    T = todo()
+    v0 = V/N_IMPACTS
+    T = N_IMPACTS/(365*Q_BAR)
     assert 0.04 < v0 < 0.06, f"v0 该在 0.05 mm³/次 上下，你得到 {v0}"
     assert 145 < T < 155, f"T 该约 150，你得到 {T}"
 
@@ -74,7 +74,7 @@ def q4():
     """向量化算加权平均磨损深度（权重取级数 20,19,...,1）。"""
     w = np.array(W)
     idx = np.arange(20, 0, -1)
-    avg = todo()
+    avg = np.average(w,weights=idx)
     assert 0.36 < avg < 0.39, f"该在 0.37 上下（越靠前的台阶磨损越深、权重也越大），你得到 {avg}"
 
 
@@ -90,7 +90,7 @@ def q5():
     for _ in range(200):
         s2 = (np.pi * A_MM * B_MM * w).sum()
     t3 = time.perf_counter()
-    assert s1 - s2 < 1e-9, "两种写法结果必须一样"
+    assert s1-s2 < 1e-9, "两种写法结果必须一样"
     print(f"   for 版 {(t1 - t0) * 1000:.1f} ms ／ numpy 版 {(t3 - t2) * 1000:.1f} ms")
 
 

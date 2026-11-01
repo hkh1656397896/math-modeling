@@ -44,7 +44,7 @@ def q1():
 def q2():
     """lognormal(mean=0, sigma=0.5) 抽 10000 个，中位数应该 ≈ 1（不是 0）。"""
     rng = np.random.default_rng(1)
-    s = rng.lognormal(mean=0, sigma=0.5, size=10_000)
+    s = rng.lognormal(mean=0, sigma=0.5, size=10000)
     med = np.median(s)
     assert 0.9 < med < 1.1, f"中位数应接近 1，你得到 {med}"
 
@@ -64,9 +64,9 @@ def q4():
     讲的那个"把 K 放大 500 倍"的坑。正确写法是先取对数。
     """
     rng = np.random.default_rng(3)
-    wrong = np.median(rng.lognormal(mean=2e-6, size=10_000))
+    wrong = np.median(rng.lognormal(mean=2e-6, size=10000))
     rng2 = np.random.default_rng(3)
-    right = np.median(rng2.lognormal(mean=np.log(2e-6), size=10_000))
+    right = np.median(rng2.lognormal(mean=np.log(2e-6), size=10000))
     assert 0.9 < wrong < 1.1, f"错写法的中位数应接近 1，你得到 {wrong}"
     assert 1e-7 < right < 1e-5, f"对写法的中位数应接近 2e-6，你得到 {right}"
 

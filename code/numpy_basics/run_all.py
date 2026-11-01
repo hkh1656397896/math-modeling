@@ -6,6 +6,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+# Windows 控制台默认 GBK，直接 print ✅ / ❌ 会 UnicodeEncodeError
+for _s in (sys.stdout, sys.stderr):
+    try:
+        _s.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 here = Path(__file__).parent
 files = sorted(p for p in here.glob("0*.py") if p.name != "00_warmup.py")
 total = 0

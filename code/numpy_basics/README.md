@@ -21,9 +21,9 @@ cd C:\Users\Lenovo\Desktop\数学建模\code\numpy_basics
 C:\Users\Lenovo\Desktop\Python作业\数模练习\.venv\Scripts\python.exe run_all.py
 ```
 
-一题一题做：把 `todo("...")` 换成真正的代码，再跑一次。三种反馈：
+一题一题做：把 `todo()` 换成真正的代码，再跑一次。三种反馈：
 
-- ⏳ 还没做（提示里就是该写的思路）
+- ⏳ 还没做（还没填代码，或填了但抛异常）
 - ❌ 做了但结果不对（断言会说"该是多少，你得到多少"）
 - ✅ 通过
 
@@ -39,8 +39,8 @@ C:\Users\Lenovo\Desktop\Python作业\数模练习\.venv\Scripts\python.exe run_a
 
 ## 卡住了怎么办
 
-1. 先看提示文字（箭头右边就是写法思路）
-2. 超过 15 分钟还卡：看 `solutions.txt` 的对应一句
+1. 先自己想 10 分钟（题面里的注释已经写清要什么）
+2. 还想不出：看 `solutions.txt` 的对应一句
 3. 仍然不懂：把"这一行在干什么"记进 `notes.md`，攒够三条再来问
 
 ## 哪些可以跳过（现在别学）

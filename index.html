@@ -113,6 +113,14 @@
 <a class="nav4" href="#np-10-3">新旧 API 对照</a>
 <a class="nav3" href="#np-11">11. np.exp：e 的 x 次方</a>
 <a class="nav3" href="#np-12">12. lognormal 到底在干什么</a>
+<a class="nav2" href="#mcm">十一、MCM 十年真题手册怎么用</a>
+<a class="nav3" href="#mcm-1">1. 它的定位：手册，不是教材</a>
+<a class="nav3" href="#mcm-2">2. 11 段代码：每段解决什么问题</a>
+<a class="nav3" href="#mcm-3">3. 模块化：存成 utils.py</a>
+<a class="nav3" href="#mcm-4">4. 六类题 → 首选方法</a>
+<a class="nav3" href="#mcm-5">5. 和我的楼梯项目对照</a>
+<a class="nav3" href="#mcm-6">6. 四个坑</a>
+<a class="nav3" href="#mcm-7">7. 我该怎么用</a>
 </nav>
 
 <h2 id="env">一、环境：装一次，以后都用它</h2>
@@ -861,6 +869,94 @@ z = np.log(已有数据)                      # 已有数据也可以取对数
 <tr><td>数据里有负数</td><td>根本不能取对数，用正态或对称分布</td></tr>
 <tr><td>数据其实对称</td><td>硬套 lognormal 会人为造出右偏</td></tr>
 </table>
+
+<h2 id="mcm">十一、MCM 十年真题手册怎么用</h2>
+<p>材料：<code>D:\Program Files\qq\MCM十年真题_方法与代码_论文技巧.html</code>（685 行、11 段代码、9 章）。它是一份"比赛当天手册"，价值在<b>广度</b>和<b>骨架</b>，不在推导。</p>
+
+<h3 id="mcm-1">1. 它的定位：手册，不是教材</h3>
+<table>
+<tr><th>章</th><th>内容</th><th>怎么用</th></tr>
+<tr><td>1</td><td>2015–2025 十年真题名表</td><td>选题时查"这题往年考过类似的吗"</td></tr>
+<tr><td>2</td><td>A–F 六类题型 + 30 秒选题判据</td><td>开赛 2 小时内定题用</td></tr>
+<tr><td>3</td><td>15 类数学工具的公式（各 2–5 行）</td><td>只当"公式在哪"的索引，别靠它学会</td></tr>
+<tr><td>4</td><td>11 段可抄代码</td><td><b>骨架</b>，改数据即用</td></tr>
+<tr><td>5–6</td><td>评委看什么、摘要模板、页数分配</td><td><b>最值钱</b>，与技术无关但决定名次</td></tr>
+<tr><td>7–9</td><td>72 小时时间表、扣分清单、速查表</td><td>打印贴墙</td></tr>
+</table>
+<div class="warn box"><b>一句话：</b>它是"考前一晚翻的手册"，不是"从零学的教材"。每类工具只有公式没有例题，照抄容易错（见第 6 节）。</div>
+
+<h3 id="mcm-2">2. 11 段代码：每段解决什么问题</h3>
+<p>这一节是这次读下来最值得留的部分——<b>不是代码本身，而是"什么问题对应哪段代码"的对照</b>。</p>
+<table>
+<tr><th>#</th><th>模块</th><th>解决什么问题</th><th>关键调用</th><th>装了没</th></tr>
+<tr><td>4.1</td><td>中文字体</td><td>图里中文全是方框</td><td><code>plt.rcParams['font.sans-serif']</code></td><td>✔</td></tr>
+<tr><td>4.2</td><td>读数据 + 描述统计</td><td>拿到数据先看规模、缺失、相关性</td><td><code>read_csv / describe / isna / corr</code></td><td>✔</td></tr>
+<tr><td>4.3</td><td>LP / MILP</td><td>资源分配、排班、选址、"开不开"这类 0-1 决策</td><td><code>pulp.LpProblem / LpVariable / solve</code></td><td>✔ 3.3.2</td></tr>
+<tr><td>4.4</td><td>回归 + 诊断</td><td>哪个因素显著、有没有多重共线、残差是否正常</td><td><code>sm.OLS().fit() / VIF</code></td><td>✘ statsmodels</td></tr>
+<tr><td>4.5</td><td>ARIMA</td><td>有历史序列，要外推未来若干期</td><td><code>ARIMA(...).fit().get_forecast</code></td><td>✘ statsmodels</td></tr>
+<tr><td>4.6</td><td>KMeans + PCA</td><td>无标签分组（客户分群）、降维看结构</td><td><code>KMeans / silhouette / PCA</code></td><td>✘ sklearn</td></tr>
+<tr><td>4.7</td><td>随机森林 + CV</td><td>非线性预测、要"哪个特征最重要"</td><td><code>RandomForest / cross_val_score</code></td><td>✘ sklearn</td></tr>
+<tr><td>4.8</td><td><b>蒙特卡洛敏感性</b></td><td>参数不确定 → 报区间（几乎所有题的"敏感性分析"）</td><td><code>default_rng / lognormal / percentile</code></td><td>✔</td></tr>
+<tr><td>4.9</td><td>networkx</td><td>网络结构：最短路、最小生成树、谁是枢纽</td><td><code>shortest_path / betweenness / pagerank</code></td><td>✘ networkx</td></tr>
+<tr><td>4.10</td><td>solve_ivp</td><td>传播/增长类常微分方程（SIR、Logistic）</td><td><code>solve_ivp</code></td><td>✔ scipy</td></tr>
+<tr><td>4.11</td><td>误差棒 / 双轴图</td><td>论文级图表：带不确定度的观测、两个量纲同图</td><td><code>errorbar / twinx</code></td><td>✔</td></tr>
+</table>
+<div class="ok box"><b>4.8 就是我的 stair_extra 的简版：</b><br>
+它的做法：参数抽 N 次 → 算目标 → 取 5/50/95 分位 → 报区间。<br>
+我做的：同一件事，另加"一阶误差传播"互证 + 区间口径表。骨架一样，深度多两层。</div>
+
+<h3 id="mcm-3">3. 模块化：存成 utils.py</h3>
+<p>原文建议"赛前把这些存成一个 utils.py，比赛时直接 import"，并点名四个函数：</p>
+<table>
+<tr><th>函数</th><th>干什么</th><th>为什么值得先写</th></tr>
+<tr><td><code>load(path)</code></td><td>读数据 + 清洗 + 打印形状/缺失/相关</td><td>每道题第一件事都相同</td></tr>
+<tr><td><code>style()</code></td><td>中文字体、字号、图尺寸、dpi</td><td>否则 30 张图要设 30 次</td></tr>
+<tr><td><code>mc_interval(f, n)</code></td><td>蒙特卡洛 + 分位数区间</td><td>敏感性分析用一次省半天</td></tr>
+<tr><td><code>save(df, name)</code></td><td>结果写 CSV + 同时打印</td><td>保证"论文里的数"和"跑出来的数"一致</td></tr>
+</table>
+<p>原文的说法：<b>比赛里 80% 的代码是重复劳动</b>。我的 <code>stair_extra.py</code> 其实已经是这个思路（四个函数各管一件事）。</p>
+
+<h3 id="mcm-4">4. 六类题 → 首选方法</h3>
+<table>
+<tr><th>题号</th><th>典型领域</th><th>首选方法</th><th>必备图</th></tr>
+<tr><td>A</td><td>连续 / 物理 / 机理</td><td>ODE/PDE、传热、力学平衡、参数反演</td><td>机理示意图 + 数值解曲线 + 参数敏感性</td></tr>
+<tr><td>B</td><td>离散 / 优化 / 调度</td><td>LP/MILP、DP、排队论、图论、启发式</td><td>路径/甘特图 + 成本对比表</td></tr>
+<tr><td>C</td><td>数据 / 统计</td><td>回归、时间序列、分类聚类</td><td>相关矩阵 + 残差图 + 预测区间</td></tr>
+<tr><td>D</td><td>运筹 / 网络</td><td>图论、网络流、排队论、选址</td><td>网络拓扑 + 流量/等待曲线</td></tr>
+<tr><td>E</td><td>环境 / 可持续</td><td>综合评价（AHP/熵权/TOPSIS）、情景模拟</td><td>指标体系图 + 情景雷达图</td></tr>
+<tr><td>F</td><td>政策 / 社会</td><td>博弈论、Agent 仿真、网络传播</td><td>演化曲线 + 政策对比</td></tr>
+</table>
+<p class="meta">我的楼梯题属于 <b>A 类</b>（物理机理 + 参数反演）——手册对 A 类几乎是空白，只有真题表里一行字。这块正是我能补的。</p>
+
+<h3 id="mcm-5">5. 和我的楼梯项目对照</h3>
+<table>
+<tr><th>维度</th><th>我的项目</th><th>手册</th></tr>
+<tr><td>题目本身</td><td>就是 2025 MCM A 题</td><td>只在真题表出现一行，<b>无方法</b></td></tr>
+<tr><td>磨损反演</td><td>完整链条（体积→次数→年限）</td><td>✘ 没有</td></tr>
+<tr><td>不可辨识性</td><td>有（一个方程三个未知）</td><td>✘ 没提</td></tr>
+<tr><td>不确定性区间</td><td>有，且解析 + 蒙特卡洛互证</td><td>✔ 只有 4.8 骨架</td></tr>
+<tr><td>贝叶斯 / GMM / DP</td><td>有</td><td>✘ 没有</td></tr>
+<tr><td>优化 / 回归 / 时序 / 网络 / ODE</td><td>没有</td><td>✔ 有骨架</td></tr>
+<tr><td>论文写作与节奏</td><td>没有</td><td>✔ 第 5–9 章</td></tr>
+</table>
+<p>结论：手册补我"广度"（优化、数据、网络、写作），我的项目给它一个"A 类的深度样本"。</p>
+
+<h3 id="mcm-6">6. 四个坑</h3>
+<div class="bad box">
+<b>① 4.3 的 PuLP 代码在 4.x 会崩：</b><code>LpVariable(..., lowBound=0)</code> 在 pulp 4.x 报 <code>TypeError</code>（API 重写）。本机钉的是 <b>3.3.2</b>，能跑；升级前先看版本。<br>
+<b>② 缺三个库：</b><code>statsmodels</code>（4.4/4.5）、<code>sklearn</code>（4.6/4.7）、<code>networkx</code>（4.9）都没装，用前 <code>pip install</code>。<br>
+<b>③ AHP/TOPSIS 只有公式：</b>AHP 缺一致性检验步骤（求 λmax → CI → CR&lt;0.1 才算通过），TOPSIS 缺"正向化 + 归一化"，直接抄会排出错的序。<br>
+<b>④ A 类题是空白：</b>手册对你最像的题型没有方法内容，别指望它教你做磨损反演。
+</div>
+
+<h3 id="mcm-7">7. 我该怎么用</h3>
+<table>
+<tr><th>阶段</th><th>做什么</th><th>验收</th></tr>
+<tr><td>这周</td><td>先不动手册：清完 numpy 25 题 + 重建 stair_model.py</td><td>25/25 通过；六个函数对上 §6 输出</td></tr>
+<tr><td>下周</td><td>四个模板各跑一次：4.3 PuLP / 4.4 回归诊断 / 4.8 蒙特卡洛 / 4.11 误差棒图</td><td>能改一个约束/参数并解释结果怎么变</td></tr>
+<tr><td>再往后</td><td>用第 5、6、8 章，把楼梯项目写一页英文摘要</td><td>摘要里每个数字都能在表里找到</td></tr>
+</table>
+<p class="back"><a href="#top">↑ 回到目录</a></p>
 
 <p class="meta" style="margin-top:30px">
 这份笔记只记“我踩过的东西”，不抄教程。所有数字都能在 <code>code/</code> 里跑出来。

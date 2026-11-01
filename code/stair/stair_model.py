@@ -13,7 +13,7 @@
 #    T     使用年数 (年)          → T_years
 #    q     日均踩踏次数 (次/天)   → q_per_day
 #
-# 进度：Day 1 常量+ellipse_volume ✅ ｜ Day 2 v0 与 N ｜ Day 3 蒙特卡洛
+# 进度：Day 1 常量+ellipse_volume ✅ ｜ Day 2 v0 与 N ✅ ｜ Day 3 蒙特卡洛 ✅
 #       Day 4 定年反演 q̄ ｜ Day 5 gmm_peaks/dp_segments ｜ Day 6 结论
 import math
 
@@ -57,16 +57,43 @@ SLIP_M = 0.03           # 单次踩踏滑移距离 s（m）≈ 3 cm
 HARDNESS_PA = 5.0e9     # 材料硬度 H（Pa）≈ 5 GPa（大理石/花岗岩量级）
 
 
+# ============================================================
+# 1. 单级台阶踏面磨损坑的体积
+# ============================================================
 # 单级台阶踏面磨损坑的体积（mm³）
 # 参数：a_mm、b_mm 磨损椭圆半轴；d_mm 这一级的最大磨损深度
 def ellipse_volume(a_mm, b_mm, d_mm):
     return 0.5 * np.pi * a_mm * b_mm * d_mm   # 式 (4)：πab·(d/2)，别漏 1/2
-V_mm3 = sum(ellipse_volume(PIT_A,PIT_B,depth) for depth in WEAR_DEPTH)
-v0_m3 = K_WEAR*LOAD_N*SLIP_M/HARDNESS_PA
-N = V_mm3*1e-9/v0_m3 
+
+# ============================================================
+# 2. 计算结果：V → v₀ → N → T（全部确定性，用中心值）
+# ============================================================
+V_mm3 = sum(ellipse_volume(PIT_A, PIT_B, depth) for depth in WEAR_DEPTH)
+v0_m3 = K_WEAR * LOAD_N * SLIP_M / HARDNESS_PA
+N = V_mm3 * 1e-9 / v0_m3
 print(f"V = {V_mm3:.0f}mm³ v₀ = {v0_m3:.3e}m³/次 N = {N:.3e}次")
 
-Q_PER_DAY = 110.0
-T = N/(365*Q_PER_DAY)       # 日均踩踏次数：先验假设，非计算数值
-print(f"T = {T:.1f}年")      # 式 (8)
+Q_PER_DAY = 110.0           # 日均踩踏次数：先验假设，非计算数值
+T = N / (365 * Q_PER_DAY)   # 式 (8)
+print(f"T = {T:.1f}年")
+
+# ============================================================
+# 3. 蒙特卡洛：把 151 年变成一个区间（讲义 §5.3）
+# ============================================================
+# σ 不是算出来的，是「不确定性」的量化。四种求法（笔记 §十.16）：
+#   对数正态   σ = ln(上限 / 中位) / 1.96
+#   正态       σ = (上限 - 下限) / 3.92
+#   均匀       无 σ，只有区间 [lo, hi]
+#   有实测     σ = np.std(x, ddof=1)
+n_draw = 20000
+seed = 20261101
+rng = np.random.default_rng(seed)
+K = rng.lognormal(np.log(K_WEAR), 0.6, n_draw)                 # 上限取中位的 3.2 倍 → ln(3.2)/1.96 = 0.59 ≈ 0.6
+H = rng.uniform(0.8 * HARDNESS_PA, 1.2 * HARDNESS_PA, n_draw)  # ±20%：只知区间、没有典型值 → 均匀
+s = rng.uniform(0.02, 0.05, n_draw)                            # 2~5 cm；少写一个 0，T 就小十倍
+F = np.clip(rng.normal(LOAD_N, 80, n_draw), 400, 1200)         # 体重 CV 11% → 80 N；clip 越界仅 0.01%
+q = rng.lognormal(np.log(Q_PER_DAY), 0.4, n_draw)              # 50~240 次/天 → ln(240/110)/1.96 = 0.40
+N_mc = V_mm3 * 1e-9 * H / (K * F * s)                          # 先换成 m³ 再除，否则差 10⁹ 倍
+T_years = N_mc / (365 * q)                                     # 式 (8)：次数 → 年
+print(np.percentile(T_years, [5, 50, 95]))                     # 5%/50%/95% 分位：下界、中位、上界
 

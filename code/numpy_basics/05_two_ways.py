@@ -13,15 +13,15 @@ import numpy as np
 CASES = []
 
 
-def todo(hint):
-    raise NotImplementedError(hint)
+def todo():
+    raise NotImplementedError("这一题还没写")
 
 
 def check(name, fn, hint):
     try:
         fn()
     except NotImplementedError:
-        print(f"⏳ {name}：还没做 → {hint}")
+        print(f"⏳ {name}：还没做")
         return 0
     except AssertionError as e:
         print(f"❌ {name}：结果不对 → {e}")
@@ -49,14 +49,14 @@ def q1():
     """for 循环版：每级体积 = π·a·b·w，总和 V。"""
     total = 0.0
     for w in W:
-        total += todo("π * A_MM * B_MM * w —— 用 np.pi")
+        total += todo()
     assert 290000 < total < 310000, f"该在 30 万 mm³ 上下（20 级之和），你得到 {total}"
 
 
 def q2():
     """numpy 版：把同一个 V 用一行算出来，两版必须相等。"""
-    w = todo("np.array(W)")
-    v_np = todo("(np.pi * A_MM * B_MM * w).sum()")
+    w = todo()
+    v_np = todo()
     v_loop = sum(np.pi * A_MM * B_MM * x for x in W)
     assert abs(v_np - v_loop) < 1e-9, f"两版不一致：{v_np} vs {v_loop}"
 
@@ -64,8 +64,8 @@ def q2():
 def q3():
     """单次磨损 v0 = V/N，再算使用年数 T = N/(365·q̄)，应 ≈ 150 年。"""
     V = np.pi * A_MM * B_MM * np.array(W).sum()
-    v0 = todo("V / N_IMPACTS")
-    T = todo("N_IMPACTS / (365 * Q_BAR)")
+    v0 = todo()
+    T = todo()
     assert 0.04 < v0 < 0.06, f"v0 该在 0.05 mm³/次 上下，你得到 {v0}"
     assert 145 < T < 155, f"T 该约 150，你得到 {T}"
 
@@ -74,7 +74,7 @@ def q4():
     """向量化算加权平均磨损深度（权重取级数 20,19,...,1）。"""
     w = np.array(W)
     idx = np.arange(20, 0, -1)
-    avg = todo("(w * idx).sum() / idx.sum()")
+    avg = todo()
     assert 0.36 < avg < 0.39, f"该在 0.37 上下（越靠前的台阶磨损越深、权重也越大），你得到 {avg}"
 
 
@@ -95,11 +95,11 @@ def q5():
 
 
 CASES.extend([
-    ("q1 for 循环算 V", q1, "total += np.pi * A_MM * B_MM * w"),
-    ("q2 向量化算 V", q2, "(np.pi * A_MM * B_MM * np.array(W)).sum()"),
-    ("q3 v0 与 T", q3, "v0 = V / N_IMPACTS；T = N_IMPACTS / (365 * Q_BAR)"),
-    ("q4 加权平均", q4, "(w * idx).sum() / idx.sum()"),
-    ("q5 性能对比", q5, "两版结果一致即可，输出会打印耗时"),
+    ("q1 for 循环算 V", q1, ""),
+    ("q2 向量化算 V", q2, ""),
+    ("q3 v0 与 T", q3, ""),
+    ("q4 加权平均", q4, ""),
+    ("q5 性能对比", q5, ""),
 ])
 
 
@@ -111,7 +111,7 @@ def main():
         score += check(name, fn, hint)
     print(f"\n{score}/{total} 通过")
     if score < total:
-        print("提示：每题失败信息里的箭头右侧就是该填的写法思路。")
+        print("卡住超过 10 分钟，再去翻 solutions.txt。")
 
 
 if __name__ == "__main__":

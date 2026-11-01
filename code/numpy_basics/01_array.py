@@ -26,6 +26,9 @@ def check(name, fn, hint):
     except AssertionError as e:
         print(f"❌ {name}：结果不对 → {e}")
         return 0
+    except Exception as e:
+        print(f"❌ {name}：出错了（{type(e).__name__}: {e}）")
+        return 0
     print(f"✅ {name}")
     return 1
 

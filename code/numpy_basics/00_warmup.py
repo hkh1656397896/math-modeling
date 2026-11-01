@@ -94,6 +94,10 @@ line("9. 随机数")
 rng = np.random.default_rng(42)          # 42 是种子，换个数字结果就不一样
 print("normal(0,1,5)      =", rng.normal(0, 1, 5))
 #                                  # → [ 0.30471708 -1.03998411  0.7504512   0.94056472 -1.95103519]
+# 下面两行为什么不用上面的 rng？
+#   因为 rng 已经抽过 5 个 normal 了，再调 rng.uniform 拿到的是「第 6~10 个」，
+#   不是「从头开始」。重新 default_rng(42) 等于把流拨回起点——这样每一行
+#   单独复制出去跑，结果都和这里一致。真实项目里则应该只建一个 rng 并复用。
 print("uniform(0,1,5)     =", np.random.default_rng(42).uniform(0, 1, 5))
 #                                  # → [0.77395605 0.43887844 0.85859792 0.69736803 0.09417735]
 print("lognormal(0,0.5,5) =", np.random.default_rng(42).lognormal(0, 0.5, 5))

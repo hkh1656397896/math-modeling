@@ -135,7 +135,8 @@
     <a class="nav4" href="#np-17-3w">17-3w 三个范围别搞混：网格 ⊃ 先验支撑 ⊃ 平台</a>   <a class="nav4" href="#np-17-4">17-4 梯形先验怎么造</a>
     <a class="nav4" href="#np-17-5">17-5 似然里的 σ 用哪个数（最容易错的一步）</a>
     <a class="nav4" href="#np-17-6">17-6 分位数：用累积和，不要用 np.percentile</a>
-    <a class="nav4" href="#np-17-7">17-7 四条自检</a>
+
+    <a class="nav4" href="#np-17-6x">17-6x 三个取分位的函数：cumsum / searchsorted / argmax</a>    <a class="nav4" href="#np-17-7">17-7 四条自检</a>
     <a class="nav4" href="#np-17-8">17-8 本案例实测（σ=0.13、梯形 [1750,1900]±50）</a>
     <a class="nav4" href="#np-17-9">17-9 哪些是讲义给的，哪些是我推的</a>
 <a class="nav3" href="#np-18">18. 蒙特卡洛：把输入的不确定翻译成输出区间</a>
@@ -1298,6 +1299,54 @@ p5  = grid[np.searchsorted(cdf, 0.05)]
 p50 = grid[np.searchsorted(cdf, 0.50)]
 p95 = grid[np.searchsorted(cdf, 0.95)]</code></pre>
 <p><code>np.percentile</code> 会假设每个网格点等权——后验不是等权的，必须走加权累积。</p>
+
+<h4 id="np-17-6x">三个取分位的函数：cumsum / searchsorted / argmax</h4>
+<p>拿到 <code>post</code>（每个年份的概率）之后，只剩三行。三个函数各干一件事，别混用。</p>
+
+<h4>① <code>np.cumsum(a)</code>：累积和</h4>
+<p>把数组从头开始一项一项加起来，<b>返回等长数组</b>，最后一项等于总和。</p>
+<table>
+<tr><th>输入 post</th><td>0.1</td><td>0.4</td><td>0.3</td><td>0.2</td></tr>
+<tr><th>cumsum</th><td>0.1</td><td>0.5</td><td>0.8</td><td>1.0</td></tr>
+</table>
+<p><b>它给的是累积分布函数（CDF）：</b><code>c[i]</code> = 「年份 ≤ grid[i] 的总概率」。这是取分位必须的前置步骤。</p>
+<p><b>坑：</b>多项浮点相加，最后一项可能是 <code>1.0000000000000002</code> 而不是 1。不要用 <code>c[-1] == 1.0</code> 判断，要用 <code>abs(c[-1] - 1) &lt; 1e-12</code>。</p>
+
+<h4>② <code>np.searchsorted(c, v)</code>：在有序数组里找一个值该插在哪</h4>
+<p>二分查找，返回下标 <code>i</code>，使得 <code>c[i-1] &lt; v ≤ c[i]</code>（默认 <code>side='left'</code>）。<b>也就是「累计概率第一次达到 v 的那一年」。</b></p>
+<table>
+<tr><th>c</th><td>0.1</td><td>0.5</td><td>0.8</td><td>1.0</td></tr>
+<tr><th>grid</th><td>1700</td><td>1800</td><td>1900</td><td>2000</td></tr>
+<tr><td>searchsorted(c, 0.05)</td><td colspan="4">→ 0 → 年份 <b>1700</b></td></tr>
+<tr><td>searchsorted(c, 0.50)</td><td colspan="4">→ 1 → 年份 <b>1800</b></td></tr>
+<tr><td>searchsorted(c, 0.95)</td><td colspan="4">→ 3 → 年份 <b>2000</b></td></tr>
+</table>
+<p><b>三个坑：</b></p>
+<ul>
+<li><b>数组必须升序</b>。传乱序不会报错，只会给一个看似合理的错答案。cumsum 天然升序，别手动打乱。</li>
+<li><b>返回值可能等于 len(c)</b>。找 <code>searchsorted(c, 1.5)</code> 会返回 4，拿它去 <code>grid[4]</code> 就 <code>IndexError</code>。取分位时 v 恒在 (0,1)，安全，但要心里有数。</li>
+<li><b>它返回的是位置，不是值</b>。必须再用这个位置去 <code>grid</code> 里取年份：<code>grid[np.searchsorted(c, 0.5)]</code>。</li>
+</ul>
+
+<h4>③ <code>post.argmax()</code>：最大值在哪一位</h4>
+<p>返回<b>最大值的下标</b>，不是最大值本身。想要值还得 <code>post.max()</code>。</p>
+<pre><code>post.argmax()   # 比如 273
+post.max()      # 比如 0.0198</code></pre>
+<p><b>三个坑：</b></p>
+<ul>
+<li><b>并列时返回第一个</b>（最小下标），即最早的那一年。</li>
+<li><b>数组里有 <code>nan</code> 时，<code>argmax</code> 会返回 nan 的位置</b>——这是最阴的坑：结果看着像个数，其实什么都没算。所以取 argmax 之前先确认 <code>np.isnan(post).sum() == 0</code>。</li>
+<li><b>众数 ≠ 中位数</b>。众数是「最高的那一根」，中位数是「累计到一半的那一年」。1873 是众数，1870 是中位数。</li>
+</ul>
+
+<h4>三行组合</h4>
+<pre><code>c = np.cumsum(post)                                  # 累积概率
+p5, p50, p95 = (grid[np.searchsorted(c, v)] for v in (0.05, 0.5, 0.95))
+mode = grid[post.argmax()]</code></pre>
+
+<div class="bad box"><b>为什么不能用 <code>np.percentile(post, 5)</code>。</b><code>np.percentile</code> 把输入当成「一堆样本」，按个数切分位；而 <code>post</code> 是「每个取值的概率」，两者含义完全不同。用它算出来会是一个落在 1600~2050 之间、但和真实分位差几十年的数，而且不报错。</div>
+
+<div class="box ok"><b>一句话记忆：</b><code>cumsum</code> 把「点概率」变成「累计概率」，<code>searchsorted</code> 把「累计概率」翻译成「位置」，<code>argmax</code> 直接找「最高点」。三个都是「返回位置」，取年份这一步永远是自己加 <code>grid[...]</code>。</div>
 
 <h4 id="np-17-7">17-7 四条自检</h4>
 <pre><code>① 后验 ⊂ 先验支撑：超出梯形范围的一定是 0，否则说明 prior 没乘上

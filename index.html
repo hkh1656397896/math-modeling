@@ -126,6 +126,7 @@
     <a class="nav4" href="#np-17-0">17-0 零前提入门：先把这些词弄明白</a>
     <a class="nav4" href="#np-17-1">17-1 式 (5)：后验 ∝ 先验 × 似然</a>
     <a class="nav4" href="#np-17-1x">17-1x 为什么是"乘"，量纲为什么不会被乘坏</a>
+    <a class="nav4" href="#np-17-1y">17-1y 什么是 CDF：cumsum 就是离散版的积分</a>
     <a class="nav4" href="#np-17-2">17-2 为什么用网格法，不直接上 MCMC</a>
     <a class="nav4" href="#np-17-3">17-3 四行骨架</a>
     <a class="nav4" href="#np-17-3x">17-3x 手算一遍：只留三个网格点</a>
@@ -136,7 +137,8 @@
     <a class="nav4" href="#np-17-5">17-5 似然里的 σ 用哪个数（最容易错的一步）</a>
     <a class="nav4" href="#np-17-6">17-6 分位数：用累积和，不要用 np.percentile</a>
 
-    <a class="nav4" href="#np-17-6x">17-6x 三个取分位的函数：cumsum / searchsorted / argmax</a>    <a class="nav4" href="#np-17-7">17-7 四条自检</a>
+    <a class="nav4" href="#np-17-6x">17-6x 三个取分位的函数：cumsum / searchsorted / argmax</a>
+    <a class="nav4" href="#np-17-7">17-7 四条自检</a>
     <a class="nav4" href="#np-17-8">17-8 本案例实测（σ=0.13、梯形 [1750,1900]±50）</a>
     <a class="nav4" href="#np-17-9">17-9 哪些是讲义给的，哪些是我推的</a>
 <a class="nav3" href="#np-18">18. 蒙特卡洛：把输入的不确定翻译成输出区间</a>
@@ -1158,6 +1160,53 @@ p(T | D)  后验：相乘再归一化</code></pre>
 <p><b>似然为什么能是概率密度。</b>严谨写法是 p(D ∈ [d, d+Δ] | T) = f(d|T)·Δ，Δ 是观测分辨率，对所有 T 是一样的常数，照样进常量。所以直接用 <code>scipy.stats.lognorm.pdf()</code> 是对的，不需要去凑"概率"。</p>
 <p><b>量纲检查：</b>like 的单位是"每 (次/天)"，prior 无量纲，乘积偏离量纲；但归一化之后后验是"每个年份的概率份额"，量纲自然被除掉了。这也是为什么后验只能解释成"相对可能性"，不能解释成"概率密度值"。</p>
 
+<h4 id="np-17-1y">什么是 CDF：cumsum 就是离散版的积分</h4>
+<p><b>CDF = cumulative distribution function，累积分布函数。</b>定义只有一句话：</p>
+<p>$F(x) = P(X \le x)$ —— 「随机变量不超过 x 的概率」。</p>
+
+<p>它和上一小节的 PDF 是一对：</p>
+
+<table>
+<tr><th>名字</th><th>符号</th><th>含义</th><th>代码里对应</th></tr>
+<tr><td><b>PDF</b>（密度）</td><td>$f(x)$</td><td>某一点的「浓度」</td><td><code>lognorm.pdf(q_need)</code>、<code>lik</code></td></tr>
+<tr><td><b>CDF</b>（累积）</td><td>$F(x)$</td><td>到某点为止的「总量」</td><td><code>np.cumsum(post)</code></td></tr>
+<tr><td><b>PPF</b>（分位）</td><td>$F^{-1}(p)$</td><td>给定总量，反查位置</td><td>用 <code>np.searchsorted</code> 手工实现</td></tr>
+</table>
+
+<p>三者关系：<b>PDF 积分 → CDF，CDF 反解 → PPF</b>。</p>
+
+<p>连续和离散只差一个符号：</p>
+<ul>
+<li>连续的 CDF 是<b>积分</b>：$F(x)=\int_{-\infty}^{x} f(t)\,dt$</li>
+<li>离散的 CDF 是<b>求和</b>：$F(k)=\sum_{i\le k} p_i$</li>
+</ul>
+<div class="box ok"><b>所以 <code>np.cumsum(post)</code> 就是离散版的积分。</b>「累积和」和「累积分布」是同一个东西的两种叫法。</div>
+
+<h4>三条性质（`searchsorted` 能用的前提）</h4>
+<table>
+<tr><th>性质</th><th>数学说法</th><th>为什么</th></tr>
+<tr><td><b>单调不减</b></td><td>$x_1<x_2 \Rightarrow F(x_1)\le F(x_2)$</td><td>加的都是非负数</td></tr>
+<tr><td><b>从 0 到 1</b></td><td>$F(-\infty)=0,\ F(+\infty)=1$</td><td>归一化保证</td></tr>
+<tr><td><b>右连续</b></td><td>每级右端取到</td><td>离散分布是阶梯函数</td></tr>
+</table>
+<p>「单调不减」最关键——它是 <code>np.searchsorted</code> 二分查找的前提。数组一旦不单调，二分直接失效（而且不报错）。</p>
+
+<pre><code>F(x)
+1.0 ┤                    ╭──────────────
+    │              ╭─────╯
+0.5 ┤        ╭─────╯        ← 中位数：F=0.5 的位置
+    │    ╭───╯
+0.0 ┤────╯
+    └──┬────┬────┬────┬──────  x
+     1700 1800 1870 1900</code></pre>
+<p>取分位的动作 = 在图上看：「纵坐标取 0.05 / 0.5 / 0.95，横着找到曲线，再往下读年份」。</p>
+
+<div class="bad box"><b>CDF 是「≤」，不是「=」。</b><br>
+$P(X=1870)=0.0198$ ← <code>post</code> 里的值，<b>点概率</b><br>
+$P(X\le1870)=0.5$ ← <code>c</code> 里的值，<b>累积概率</b><br>
+两者差一个数量级。用途也不同：<b><code>post</code> 画图（哪年最高），<code>c</code> 取分位（一半概率落在哪年之前）。</b></div>
+<p>这条 CDF 在 <a href="#np-17-6">17-6 分位数</a> 和 <a href="#np-17-6x">17-6x 三个取分位函数</a> 里会真正用上。</p>
+
 <h4 id="np-17-2">17-2 为什么用网格法，不直接上 MCMC</h4>
 <p>待估参数<b>只有 1 个</b>（年代）。在年份轴上铺 451 个点，逐点算先验和似然，精度就够了，而且每一步都能打印出来看。MCMC 是给参数多、维数高的情形准备的（≥3 维才有明显收益）；一维问题用 MCMC 是拿大炮打蚊子，还引入收敛诊断的麻烦。</p>
 
@@ -1300,7 +1349,7 @@ p50 = grid[np.searchsorted(cdf, 0.50)]
 p95 = grid[np.searchsorted(cdf, 0.95)]</code></pre>
 <p><code>np.percentile</code> 会假设每个网格点等权——后验不是等权的，必须走加权累积。</p>
 
-<h4 id="np-17-6x">三个取分位的函数：cumsum / searchsorted / argmax</h4>
+<h4 id="np-17-6x">17-6x 三个取分位的函数：cumsum / searchsorted / argmax</h4>
 <p>拿到 <code>post</code>（每个年份的概率）之后，只剩三行。三个函数各干一件事，别混用。</p>
 
 <h4>① <code>np.cumsum(a)</code>：累积和</h4>

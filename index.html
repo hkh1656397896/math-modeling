@@ -133,7 +133,9 @@
     <a class="nav4" href="#np-17-3y">17-3y 归一化：把「分数」变成「概率」</a>
 
     <a class="nav4" href="#np-17-3z">17-3z 网格怎么取：范围、步长、两端自检</a> 
-    <a class="nav4" href="#np-17-3w">17-3w 三个范围别搞混：网格 ⊃ 先验支撑 ⊃ 平台</a>   <a class="nav4" href="#np-17-4">17-4 梯形先验怎么造</a>
+    <a class="nav4" href="#np-17-3w">17-3w 三个范围别搞混：网格 ⊃ 先验支撑 ⊃ 平台</a>
+    <a class="nav4" href="#np-17-3v">17-3v 网格 grid 本身：位置与年份之间的翻译表</a>
+    <a class="nav4" href="#np-17-4">17-4 梯形先验怎么造</a>
     <a class="nav4" href="#np-17-5">17-5 似然里的 σ 用哪个数（最容易错的一步）</a>
     <a class="nav4" href="#np-17-6">17-6 分位数：用累积和，不要用 np.percentile</a>
 
@@ -1160,7 +1162,7 @@ p(T | D)  后验：相乘再归一化</code></pre>
 <p><b>似然为什么能是概率密度。</b>严谨写法是 p(D ∈ [d, d+Δ] | T) = f(d|T)·Δ，Δ 是观测分辨率，对所有 T 是一样的常数，照样进常量。所以直接用 <code>scipy.stats.lognorm.pdf()</code> 是对的，不需要去凑"概率"。</p>
 <p><b>量纲检查：</b>like 的单位是"每 (次/天)"，prior 无量纲，乘积偏离量纲；但归一化之后后验是"每个年份的概率份额"，量纲自然被除掉了。这也是为什么后验只能解释成"相对可能性"，不能解释成"概率密度值"。</p>
 
-<h4 id="np-17-1y">什么是 CDF：cumsum 就是离散版的积分</h4>
+<h4 id="np-17-1y">17-1y 什么是 CDF：cumsum 就是离散版的积分</h4>
 <p><b>CDF = cumulative distribution function，累积分布函数。</b>定义只有一句话：</p>
 <p>$F(x) = P(X \le x)$ —— 「随机变量不超过 x 的概率」。</p>
 
@@ -1266,7 +1268,7 @@ assert abs(post.sum() - 1.0) &lt; 1e-12</code></pre>
 </table>
 <p>三个都叫 normalization，含义完全不同。<b>别人说「先归一化」时，一定要问清是哪一个</b>——在这道题里只有第一种。</p>
 
-<h4 id="np-17-3z">网格怎么取：范围、步长、两端自检</h4>
+<h4 id="np-17-3z">17-3z 网格怎么取：范围、步长、两端自检</h4>
 <p>网格不是「随便取一段年份」。取法有三条硬规矩，违反了结果会悄悄错。</p>
 
 <p><b>规矩一：必须包住先验的非零区间。</b>梯形先验的支撑是 <code>[1700, 1950]</code>（平台 1750~1900，两侧各 50 年斜坡）。网格必须比这个区间更长，两端各留出至少一个斜坡宽度的余量。</p>
@@ -1296,7 +1298,7 @@ assert abs(post.sum() - 1.0) &lt; 1e-12</code></pre>
 
 <p>顺带记住一个通用原则：<b>网格的作用是「把积分变成求和」，所以它必须覆盖被积函数的全部非零区域，并留有余量。</b>这条在数值积分、直方图、傅里叶变换里全都是同一个道理。</p>
 
-<h4 id="np-17-3w">三个范围别搞混：网格 ⊃ 先验支撑 ⊃ 平台</h4>
+<h4 id="np-17-3w">17-3w 三个范围别搞混：网格 ⊃ 先验支撑 ⊃ 平台</h4>
 <p>写贝叶斯时代码里会同时出现三组年份，最容易混的就是它们。它们不是矛盾，是<b>一层套一层</b>。</p>
 
 <pre><code>1600 ────────────┬──── 1700 ════┬════════╦═══════════┬════ 1950 ────┬──── 2050
@@ -1320,6 +1322,48 @@ assert abs(post.sum() - 1.0) &lt; 1e-12</code></pre>
 <p><b>网格右端取 2025 还是 2050？</b>都行，只要满足两条：① ≥ 1950（先验右端）；② ≤ 2025（<code>T = 2026 - 年份</code> 必须 ≥ 1，否则除零）。我验证时用 2050（451 点），用 2025（425 点）结果一位不差。</p>
 
 <div class="box ok"><b>一句话记法：</b>网格是<b>画布</b>，先验是<b>墨迹</b>，平台是<b>墨最浓的地方</b>。画布永远比墨迹大。</div>
+
+<h4 id="np-17-3v">17-3v 网格 grid 本身：位置与年份之间的翻译表</h4>
+<p><code>grid</code> 是这次计算的主轴——它既是一个年份数组，也是<b>位置 ↔ 年份</b>的唯一翻译表。</p>
+<pre><code>years_grid = np.arange(1600, 2026.0)   # [1600, 1601, ..., 2025]，共 426 个</code></pre>
+<p><code>np.arange(起点, 终点)</code> <b>左闭右开</b>：终点写 2026，最后一个数是 2025 —— 这正好避开 <code>T = 0</code> 的除零。</p>
+
+<h4>它的真正价值：全链路对齐</h4>
+<p>后面每个数组都从 <code>grid</code> 派生，<b>等长、同索引</b>。第 i 位永远是同一个年份：</p>
+<table>
+<tr><th>索引 i</th><th>0</th><th>1</th><th>…</th><th>274</th><th>…</th><th>425</th></tr>
+<tr><td><code>grid[i]</code></td><td>1600</td><td>1601</td><td>…</td><td>1874</td><td>…</td><td>2025</td></tr>
+<tr><td><code>T[i]</code></td><td>426</td><td>425</td><td>…</td><td>152</td><td>…</td><td>1</td></tr>
+<tr><td><code>q_need[i]</code></td><td>39.0</td><td>39.1</td><td>…</td><td>109.2</td><td>…</td><td>16600</td></tr>
+<tr><td><code>prior[i]</code></td><td>0</td><td>0</td><td>…</td><td>1</td><td>…</td><td>0</td></tr>
+<tr><td><code>post[i]</code></td><td>0</td><td>0</td><td>…</td><td>0.0198</td><td>…</td><td>0</td></tr>
+</table>
+<p>所以最后那一步才成立：</p>
+<pre><code>grid[np.searchsorted(c, 0.5)]    # 位置 270 → 年份 1870</code></pre>
+<div class="box ok"><b><code>searchsorted</code> 给的是位置，<code>grid</code> 负责把位置翻译回年份。</b>这就是它必须一直拿在手里的原因 —— 中途丢了它，结果只是「第 270 个点」，说不出是哪一年。</div>
+
+<h4>三条对齐规则</h4>
+<ol>
+<li><b>所有数组都从 <code>grid</code> 派生</b>：<code>T = 2026 - grid</code>、<code>q_need = N/(365*T)</code>、<code>prior</code>、<code>lik</code> 同长度。绝不手工另造一个列表，长度一错后面全是位置错位。</li>
+<li><b>只有 <code>grid</code> 存年份</b>，其余都是数值。不要中途把年份和流量混进同一个变量。</li>
+<li><b>取结果一律 <code>grid[...]</code></b>，不要自己加减换算。</li>
+</ol>
+
+<h4>两个坑</h4>
+<table>
+<tr><th>写法</th><th>后果</th></tr>
+<tr><td><code>list(range(1600, 2026))</code></td><td>列表不能 <code>2026 - grid</code>、不能 <code>clip</code>，每步都得手写循环</td></tr>
+<tr><td><code>np.linspace(1600, 2025, 426)</code></td><td>看着一样，但点数写成 425/427 时步长就不是 1，年份变小数<b>且不报错</b></td></tr>
+</table>
+<p><code>arange</code> 的语义更直白：起点、终点、步长 1。</p>
+
+<h4>命名与自检</h4>
+<p>存进 <code>stair_model.py</code> 建议叫 <b><code>years_grid</code></b>：<code>grid</code> 在别的语境里含义太多（网格搜索、图像网格），加前缀一眼看懂。</p>
+<pre><code># 四条自检
+assert len(years_grid) == len(post) == 426
+assert years_grid[0] == 1600 and years_grid[-1] == 2025
+assert np.all(np.diff(years_grid) == 1)   # 连续、步长 1
+assert post[0] == 0 and post[-1] == 0     # 两端归零</code></pre>
 
 <h4 id="np-17-4">17-4 梯形先验怎么造</h4>
 <pre><code># 平台 [1750,1900] 取 1；左 1650→1750、右 1900→2000 线性降到 0

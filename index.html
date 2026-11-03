@@ -72,7 +72,6 @@
 
 <nav>
 <b>目录</b>
-<a class="nav2" href="#conv">零、写作约定：公式、代码、编号</a>
 <a class="nav2" href="#env">一、环境：装一次，以后都用它</a>
 <a class="nav2" href="#numpy">二、numpy 最小集</a>
 <a class="nav3" href="#numpy-1">1. 造数组</a>
@@ -167,47 +166,6 @@
 <a class="nav3" href="#mcm-6">6. 四个坑</a>
 <a class="nav3" href="#mcm-7">7. 我该怎么用</a>
 </nav>
-
-<h2 id="conv">零、写作约定：公式、代码、编号</h2>
-<p>这份笔记是<b>手写 HTML</b>，不是 Markdown。下面几条都是踩过坑之后定下来的写法，新加内容照这个来，省得回头返工。</p>
-
-<h3>0.1 公式：行内 <code>$...$</code>，页面用 KaTeX 渲染</h3>
-<ul>
-<li>行内公式写 <code>$...$</code>（2026-11-03 起接入 KaTeX，正文的 <code>$</code> 才会渲染成数学式）。</li>
-<li><b>公式里的小于号必须写 <code>\lt</code>，大于号写 <code>\gt</code>。</b>直接写 <code>&lt;</code> 会被浏览器当成标签开头，把它后面的内容整段吃掉 —— 17-1y 那张性质表的「单调不减」一行就是这么坏的（只剩 <code>x_1</code>）。</li>
-<li><b>公式里不写中文。</b>KaTeX 会把中文当普通字符排，字距和基线都会歪。</li>
-<li>希腊字母、上下标、积分求和用标准 LaTeX：<code>\sigma</code>、<code>x_1</code>、<code>\int_0^1</code>、<code>\sum_{i\le k}</code>、<code>\frac{a}{b}</code>、<code>\Rightarrow</code>。</li>
-<li>本页<b>没开 <code>$$</code> 块级渲染</b>，要单独成行的公式也用行内 <code>$...$</code> 包起来即可。</li>
-</ul>
-
-<h3>0.2 代码：用 <code>&lt;code&gt;</code>，不用反引号</h3>
-<ul>
-<li>行内代码写 <code>&lt;code&gt;np.cumsum&lt;/code&gt;</code>。<b>不要用 Markdown 的反引号</b> —— 页面不会转成等宽字体，会原样打出 <code>`</code>（17-1y 标题里踩过一次）。</li>
-<li>多行代码用 <code>&lt;pre&gt;&lt;code&gt;...&lt;/code&gt;&lt;/pre&gt;</code>；其中的 <code>$</code> 不会被公式渲染器动（已把 <code>pre</code>/<code>code</code> 排除在外）。</li>
-<li>行尾注释用 <code>#</code>，别用 <code>//</code>；命令行示例前面不加 <code>$</code> 提示符，直接写命令。</li>
-</ul>
-
-<h3>0.3 编号：标题文本里必须带号</h3>
-<ul>
-<li>层级：<code>h2</code> = 大章（一、二、三…）；<code>h3</code> = <code>X.Y</code>；<code>h4</code> = <code>17-1x</code> 这种细号。</li>
-<li><b>标题文本里要写出编号</b>：写「<code>17-3z 网格怎么取…</code>」，不能只写「网格怎么取…」—— 否则目录和正文对不上，扫一眼像是「编号丢了」（2026-11-02 就发生过一次）。</li>
-<li>新增小节同时在目录加一条 <code>class="nav4"</code>，<code>href</code> 与正文 <code>id</code> 必须一致。</li>
-<li>新增小节前先想清楚它挂在哪一节下面，别为了省事全平铺在 <code>h3</code>。</li>
-</ul>
-
-<h3>0.4 三个提示框</h3>
-<table>
-<tr><th>类名</th><th>颜色</th><th>用在哪</th></tr>
-<tr><td><code>class="ok box"</code></td><td>绿</td><td>结论、记法、可以照抄的话</td></tr>
-<tr><td><code>class="warn box"</code></td><td>黄</td><td>注意事项、容易忘的前提</td></tr>
-<tr><td><code>class="bad box"</code></td><td>红</td><td>坑、错误写法、会算错的地方</td></tr>
-</table>
-<p>红框不要整篇都红，一段最多一个；黄框用来放「不知道就会做错」的前提（比如 σ 的取值依据）。</p>
-
-<h3>0.5 提交前自检</h3>
-<p>改完先在本地数一遍标签是否配对，再提交：</p>
-<pre><code>python -c "import io,re; s=io.open(r'index.html',encoding='utf-8').read(); [print(t, len(re.findall('&lt;'+t+'[ &gt;]', s)), len(re.findall('&lt;/'+t+'&gt;', s))) for t in ('h2','h3','h4','div','pre','table')]"</code></pre>
-<p>两边数字必须相等。另外两条：<b>公式里不能有裸的 <code>&lt;</code></b>；<b>正文里不能有反引号</b>。</p>
 
 <h2 id="env">一、环境：装一次，以后都用它</h2>
 

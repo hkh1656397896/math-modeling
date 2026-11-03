@@ -59,6 +59,11 @@
   .fab:hover{background:#0b5cc0}
   .fab.show{opacity:1; pointer-events:auto}  .tag{display:inline-block; background:#eef2f7; border-radius:4px; padding:0 6px; font-size:12.5px; color:var(--muted)}
 </style>
+<!-- 公式渲染：KaTeX（只处理正文里的 $...$，pre/code 里的 $ 不动） -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body,{delimiters:[{left:'$',right:'$',display:false}],ignoredTags:['pre','code','script','style','textarea'],throwOnError:false});"></script>
 </head>
 <body id="top">
 
@@ -1184,10 +1189,10 @@ p(T | D)  后验：相乘再归一化</code></pre>
 </ul>
 <div class="box ok"><b>所以 <code>np.cumsum(post)</code> 就是离散版的积分。</b>「累积和」和「累积分布」是同一个东西的两种叫法。</div>
 
-<h4>三条性质（`searchsorted` 能用的前提）</h4>
+<h4>三条性质（<code>searchsorted</code> 能用的前提）</h4>
 <table>
 <tr><th>性质</th><th>数学说法</th><th>为什么</th></tr>
-<tr><td><b>单调不减</b></td><td>$x_1<x_2 \Rightarrow F(x_1)\le F(x_2)$</td><td>加的都是非负数</td></tr>
+<tr><td><b>单调不减</b></td><td>$x_1 \lt x_2 \Rightarrow F(x_1)\le F(x_2)$</td><td>加的都是非负数</td></tr>
 <tr><td><b>从 0 到 1</b></td><td>$F(-\infty)=0,\ F(+\infty)=1$</td><td>归一化保证</td></tr>
 <tr><td><b>右连续</b></td><td>每级右端取到</td><td>离散分布是阶梯函数</td></tr>
 </table>

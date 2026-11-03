@@ -165,6 +165,7 @@
     <a class="nav4" href="#np-18-16">18-16 四条自检</a>
     <a class="nav4" href="#np-18-17">18-17 本案例实测（σ=0.13、梯形 [1750,1900]±50）</a>
     <a class="nav4" href="#np-18-18">18-18 哪些是讲义给的，哪些是我推的</a>
+<a class="nav4" href="#np-18-19">18-19 错因卡片：这五处我亲手踩过</a>
 </nav>
 
 <h2 id="env">一、环境：装一次，以后都用它</h2>
@@ -1748,6 +1749,23 @@ mode = grid[post.argmax()]</code></pre>
 </table>
 <div class="bad box"><b>写论文时不能混着写。</b>讲义给的（式、先验形状、q̄ 的分布）要标"据建模讲义"，自己推的（σ=13% 那步）必须把推导过程写出来。评审最容易问的就是中间那几个"凭什么取这个数"——<b>能说清出处的才是假设，说不清的就成了编数</b>。</div>
 
+
+<h4 id="np-18-19">18-19 错因卡片：这五处我亲手踩过</h4>
+<p>重写这道题时，下面五处每次都错，而且<b>全都不报错</b>——只是结果悄悄变成 1600 或别的怪东西。写完先对着这张表过一遍。</p>
+<table>
+<tr><th>#</th><th>错在哪</th><th>现象</th><th>一句话自检</th></tr>
+<tr><td>1</td><td><code>np.clip(years - (flat_lo - ramp), 0, 1)</code> 漏了 <code>/ ramp</code></td><td>斜坡变阶跃：1701 年直接跳到 1，<code>ramp=50</code> 形同虚设</td><td><code>p[grid == 1725] == 0.5</code></td></tr>
+<tr><td>2</td><td>右斜坡写成 <code>flat_hi - ramp</code>（应为 <code>flat_hi + ramp</code>）</td><td>从 1850 就开始下降，1900 的平台被削掉一半，先验支撑缩成 1701–1849</td><td><code>p[grid == 1900] == 1</code></td></tr>
+<tr><td>3</td><td><code>lognorm.pdf(q, 0.13, 110)</code> 用位置参数</td><td>110 落到 <code>loc</code>（平移量）而不是 <code>scale</code>（中位数），只有 q&gt;110 才有密度，似然非零点从 425 掉到 86</td><td><code>lognorm.pdf(110, s=.13, scale=110) ≈ 0.0279</code></td></tr>
+<tr><td>4</td><td><code>V = ellipse_volume(PIT_A, PIT_B, WEAR_DEPTH)</code> 漏求和</td><td>V 变成长度 20 的数组，MC 里 <code>ValueError: operands could not be broadcast together with shapes (20,) (20000,)</code></td><td><code>print(V)</code> 出现方括号就是错</td></tr>
+<tr><td>5</td><td>先验与似然支撑不相交，<code>posterior /= posterior.sum()</code> 时总和为 0</td><td><code>RuntimeWarning: invalid value encountered in divide</code>，后验全 <code>nan</code>，分位全取到 1600、区间宽 0</td><td><code>post.sum()</code> 必须是 1.0</td></tr>
+</table>
+<div class="box warn"><b>最有效的三条自检（写在代码末尾）。</b><br>
+① <code>(post &gt; 0).sum() == 249</code> —— 支撑宽度对不对；<br>
+② <code>abs(post.sum() - 1) &lt; 1e-12</code> —— 归一化有没有生效（<code>nan</code> 会在这里暴露）；<br>
+③ <code>post[0] == 0 and post[-1] == 0</code> —— 网格两端有没有留余量。<br>
+这三条过了，分位数才有可能对。</div>
+<div class="bad box"><b>「区间宽 = 0」是万能报警。</b>真后验不可能宽度为 0。一旦看到 0、1、几百这种怪数字，先回去查先验和似然的支撑有没有交集，别急着调 σ。</div>
 
 <h2 id="mcm">十一、MCM 十年真题手册怎么用</h2>
 <p>材料：<code>D:\Program Files\qq\MCM十年真题_方法与代码_论文技巧.html</code>（685 行、11 段代码、9 章）。它是一份"比赛当天手册"，价值在<b>广度</b>和<b>骨架</b>，不在推导。</p>

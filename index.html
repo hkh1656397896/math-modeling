@@ -1617,6 +1617,31 @@ p50 = grid[np.searchsorted(cdf, 0.50)]
 p95 = grid[np.searchsorted(cdf, 0.95)]</code></pre>
 <p><code>np.percentile</code> 会假设每个网格点等权——后验不是等权的，必须走加权累积。</p>
 
+<p class="subhead"><b>为什么非要累积：它和点概率回答的是两个问题</b></p>
+<table>
+<tr><th>你想问</th><th>看哪个</th><th>本模型答案</th></tr>
+<tr><td>哪一年最可能？</td><td><code>post.argmax()</code></td><td>1873（点概率 2.00%）</td></tr>
+<tr><td>90% 的把握落在哪一段？</td><td>累积概率相减</td><td>1833–1899（覆盖 90.4%）</td></tr>
+<tr><td>一半概率在哪年之前？</td><td>累积概率反查</td><td>1870（累计 51.5%）</td></tr>
+</table>
+<p>点概率单独回答不了第二行的问题：要知道「这一段一共占多少概率」，还是得把这一段加起来 —— <code>cumsum</code> 只是把「从最左端起算的所有累计和」一次算完了。</p>
+<p>而且累积不丢信息：$p_i = F_i - F_{i-1}$，减一下就能还原点概率。它只是把「每格多少概率」换成了「数到这一格一共多少概率」。</p>
+<table>
+<tr><th>年份</th><th>点概率 <code>post</code></th><th>累计 <code>c</code></th></tr>
+<tr><td>1833</td><td>0.00422</td><td><b>0.0537</b> ← 刚过 5%</td></tr>
+<tr><td>1850</td><td>0.01146</td><td>0.1848</td></tr>
+<tr><td>1870</td><td>0.01980</td><td><b>0.5150</b> ← 刚过 50%</td></tr>
+<tr><td>1873</td><td>0.01995</td><td>0.5748</td></tr>
+<tr><td>1899</td><td>0.00691</td><td><b>0.9533</b> ← 刚过 95%</td></tr>
+</table>
+<p>看 1833 那一行：点概率只有 0.42%，单看它完全不起眼，但它累计到 5.37%，所以它才是下界。<b>下界是累积出来的，不是挑出来的。</b></p>
+<div class="bad box"><b>三个常见写法都是错的（都实测过）。</b><br>
+① <code>np.percentile(post, 5)</code> → <code>0.0</code>：返回的是<b>概率值</b>，不是年份。<br>
+② <code>np.percentile(grid, 5)</code> → <code>1621</code>：把年份当等权样本，完全无视 <code>post</code> 的权重。<br>
+③ <code>np.percentile(grid, 5, weights=post)</code> → 抛 <code>ValueError: Only method 'inverted_cdf' supports weights. Got: linear.</code>（numpy 只允许 <code>method='inverted_cdf'</code> 带权重）。<br>
+根子在于：426 个格子是<b>带质量的样本</b>，而 <code>percentile</code> 的默认语义是「等权数据点排序后取位置」。<code>cumsum</code> + <code>searchsorted</code> 才是按概率质量手工取分位。</div>
+<div class="box warn"><b>报区间要写清「中间 90%」。</b>1833–1899 实际覆盖 0.904，剩下 9.6% 落在两端长尾里。所以结论写成「90% 概率落在 1833–1899」，不能写成「年份一定在这段内」。</div>
+
 <h4 id="np-18-14">18-14 三个取分位的函数：cumsum / searchsorted / argmax</h4>
 <p>拿到 <code>post</code>（每个年份的概率）之后，只剩三行。三个函数各干一件事，别混用。</p>
 
@@ -1631,6 +1656,19 @@ p95 = grid[np.searchsorted(cdf, 0.95)]</code></pre>
 
 <p class="subhead"><b>② <code>np.searchsorted(c, v)</code>：在有序数组里找一个值该插在哪</b></p>
 <p>二分查找，返回下标 <code>i</code>，使得 <code>c[i-1] &lt; v ≤ c[i]</code>（默认 <code>side='left'</code>）。<b>也就是「累计概率第一次达到 v 的那一年」。</b></p>
+
+<p class="subhead"><b>三个参数各是谁</b></p>
+<table>
+<tr><th>位置</th><th>是什么</th><th>本模型里</th></tr>
+<tr><td>第 1 个参数 <code>c</code></td><td>升序数组：<b>累积概率</b></td><td><code>np.cumsum(post)</code>，值在 0~1</td></tr>
+<tr><td>第 2 个参数 <code>v</code></td><td>要找的<b>分位水平</b>（不是年份）</td><td>0.05 / 0.50 / 0.95</td></tr>
+<tr><td>返回值 <code>i</code></td><td><b>下标</b>，不是年份</td><td>还要 <code>grid[i]</code> 翻译成年份</td></tr>
+</table>
+<p>读作：「在累积概率里，找第一个 ≥ v 的位置」。补一个不是整数的例子：<code>searchsorted(c, 0.55)</code> → 2（因为 <code>c[1]=0.5</code> 还不够，<code>c[2]=0.8</code> 才够），对应年份 1900。</p>
+<p><b>恰好相等时看 <code>side</code>。</b>默认 <code>side='left'</code> 返回 <code>i</code> 本身；改成 <code>side='right'</code> 会跳到下一个。取分位一直用默认值。</p>
+<div class="bad box"><b>两种「搞反」都是静默错误，不报错。</b><br>
+① <code>np.searchsorted(post, 0.5)</code>：<code>post</code> 不是升序，二分的前提不成立，结果无意义（而且看着像个下标）。<br>
+② <code>np.searchsorted(c, 1870)</code>：拿年份去搜累积概率，1870 比 <code>c</code> 里所有值都大 → 返回 <code>426</code>（数组末端），再 <code>grid[426]</code> 就越界。</div>
 <table>
 <tr><th>c</th><td>0.1</td><td>0.5</td><td>0.8</td><td>1.0</td></tr>
 <tr><th>grid</th><td>1700</td><td>1800</td><td>1900</td><td>2000</td></tr>

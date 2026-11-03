@@ -1417,11 +1417,66 @@ assert post[0] == 0 and post[-1] == 0     # 两端归零</code></pre>
 <div class="box ok"><b>一句话记法：</b>网格是<b>画布</b>，先验是<b>墨迹</b>，平台是<b>墨最浓的地方</b>。画布永远比墨迹大。</div>
 
 <h4 id="np-17-10">17-10 梯形先验怎么造</h4>
-<pre><code># 平台 [1750,1900] 取 1；左 1650→1750、右 1900→2000 线性降到 0
-p[(y >= 1750) &amp; (y &lt;= 1900)] = 1.0
-p[(y >= 1650) &amp; (y &lt; 1750)] = (y - 1650) / 100.0
-p[(y &gt; 1900) &amp; (y &lt;= 2000)] = (2000 - y) / 100.0</code></pre>
-<div class="warn box"><b>为什么不能直接用均匀。</b>形制断代的意思是"越往外越不可能"，不是"1900 年之后绝无可能"。均匀先验会在边界硬切一刀，<b>先验为 0 的地方后验必然为 0</b>——后验上界就被钉死在 1900，而讲义给的是 1903。梯形给两侧留了衰减带，才谈得上"压窄"而不是"砍掉"。</div>
+
+<p>梯形 = <b>两条斜坡取较小值</b>。左边一条从 0 升到 1，右边一条从 1 降到 0，两者取 <code>min</code>，自动得到「一格平台 + 两侧衰减」，不用手写四段区间。</p>
+
+<p class="subhead"><b>写法一：clip（推荐）</b></p>
+
+<pre><code>def make_prior(years, flat_lo=1750.0, flat_hi=1900.0, ramp=50.0):
+    # 左斜坡：在 flat_lo-ramp 处为 0，到 flat_lo 升到 1
+    left  = np.clip((years - (flat_lo - ramp)) / ramp, 0, 1)
+    # 右斜坡：在 flat_hi+ramp 处为 0，到 flat_hi 升到 1
+    right = np.clip(((flat_hi + ramp) - years) / ramp, 0, 1)
+    return np.minimum(left, right)      # 取小 → 梯形</code></pre>
+
+<p>两个端点各归一化到 0～1，取小之后，平台段两条线都是 1，两侧各只有一条线在爬 —— 形状自然就是梯形。</p>
+
+<p class="subhead"><b>写法二：三段掩码（等价，但更容易写错）</b></p>
+
+<pre><code>p = np.zeros_like(years)
+p[(years &gt;= flat_lo) &amp; (years &lt;= flat_hi)] = 1.0              # 平台
+m1 = (years &gt;= flat_lo - ramp) &amp; (years &lt; flat_lo)
+p[m1] = (years[m1] - (flat_lo - ramp)) / ramp                 # 左斜坡
+m2 = (years &gt; flat_hi) &amp; (years &lt;= flat_hi + ramp)
+p[m2] = ((flat_hi + ramp) - years[m2]) / ramp                 # 右斜坡</code></pre>
+
+<p>两种写法结果完全相同（可逐个元素比对，<code>np.array_equal</code> 为 True）。那为什么用 clip？</p>
+
+<table>
+  <tr><th>原因</th><th>说明</th></tr>
+  <tr><td>少 4 个边界条件</td><td><code>&gt;=</code> / <code>&lt;</code> 写错一个，端点就从 0 变 1、或平台多一格，而且<b>不报错</b></td></tr>
+  <tr><td>参数化干净</td><td>改斜坡长度只动一个 <code>ramp</code>；掩码版要同时改三处，漏一处就出折线</td></tr>
+  <tr><td>不会冒出负值</td><td>掩码版一旦区间重叠，后写的赋值会覆盖前面的，容易出现非法值；clip 天生夹在 [0,1]</td></tr>
+  <tr><td>接缝连续</td><td>在 <code>flat_lo</code>、<code>flat_hi</code> 处两条斜坡都等于 1，取小后没有跳变</td></tr>
+</table>
+
+<p class="subhead"><b>造完先验，验这九个点</b>（本案例 <code>flat_lo=1750</code>、<code>flat_hi=1900</code>、<code>ramp=50</code>）</p>
+
+<table>
+  <tr><th>年份</th><th>1600</th><th>1700</th><th>1725</th><th>1750</th><th>1800</th><th>1900</th><th>1925</th><th>1950</th><th>2000</th></tr>
+  <tr><td>prior</td><td>0</td><td>0</td><td>0.5</td><td>1</td><td>1</td><td>1</td><td>0.5</td><td>0</td><td>0</td></tr>
+</table>
+
+<p class="subhead"><b>四条自检（都实测过）</b></p>
+
+<pre><code>p = make_prior(years_grid)
+assert p[years_grid == 1750][0] == 1 and p[years_grid == 1900][0] == 1   # 平台顶格
+assert p[years_grid == 1700][0] == 0 and p[years_grid == 1950][0] == 0   # 斜坡落到底
+assert (p &gt; 0).sum() == 249        # 1701～1949，共 249 个点
+assert abs(p.sum() - 200) &lt; 1e-9   # 平台 150 年 + 两个三角形各 25</code></pre>
+
+<div class="warn box">
+<b>为什么不能直接用均匀。</b>形制断代的意思是「越往外越不可能」，不是「1900 年之后绝无可能」。均匀先验在边界硬切一刀，<b>先验为 0 的地方后验必然为 0</b> —— 后验上界就被钉死在 1900，而讲义给的是 1903。梯形给两侧留了衰减带，才有可能「压窄」而不是「砍掉」。
+</div>
+
+<div class="bad box">
+<b>三个坑。</b>
+① 把 <code>np.minimum</code> 写成 <code>np.maximum</code>：变成中间凹、两头高的「工」字形，等于说 1800 年最不可能，完全反了。
+② <code>np.clip(x, 1, 0)</code>：上下限颠倒，整条先验变全 0，<b>不报错</b>，后验会全 0 然后除以 0。
+③ 斜坡照抄成 100：支撑变成 [1650,2000]，非零点 349 个、面积 250，后验会宽出约 10 年 —— 和 17-17 的实测数字对不上。本案例一律 <code>ramp=50</code> → 支撑 [1700,1950]（见 <a href="#np-17-9">17-9 三个范围</a>）。
+</div>
+
+<p>顺便排掉一个容易误用的库函数：<code>scipy.stats.trapezoid</code> 是<b>梯形分布</b>（一个概率分布），不是「造一个梯形数组」的工具；<code>np.trapezoid</code> 则是数值积分。这两个都和本节的 <code>make_prior</code> 无关。</p>
 
 <h4 id="np-17-11">17-11 似然里的 σ 用哪个数（最容易错的一步）</h4>
 <div class="bad box">

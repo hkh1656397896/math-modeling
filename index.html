@@ -58,6 +58,7 @@
     opacity:0; pointer-events:none; transition:opacity .2s}
   .fab:hover{background:#0b5cc0}
   .fab.show{opacity:1; pointer-events:auto}  .tag{display:inline-block; background:#eef2f7; border-radius:4px; padding:0 6px; font-size:12.5px; color:var(--muted)}
+  .subhead{margin:18px 0 6px;font-weight:600;color:#1f2328}
 </style>
 <!-- 公式渲染：KaTeX（只处理正文里的 $...$，pre/code 里的 $ 不动） -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
@@ -130,7 +131,8 @@
 <a class="nav3" href="#np-17">17. 贝叶斯合成：网格法把 462 年压到 68 年</a>
     <a class="nav4" href="#np-17-0">17-0 零前提入门：先把这些词弄明白</a>
     <a class="nav4" href="#np-17-1">17-1 式 (5)：后验 ∝ 先验 × 似然</a>
-    <a class="nav4" href="#np-17-1x">17-1x 为什么是"乘"，量纲为什么不会被乘坏</a>
+    <a class="nav4" href="#np-17-1w">17-1w 什么是 PDF：密度不是概率</a>
+      <a class="nav4" href="#np-17-1x">17-1x 为什么是"乘"，量纲为什么不会被乘坏</a>
     <a class="nav4" href="#np-17-1y">17-1y 什么是 CDF：cumsum 就是离散版的积分</a>
     <a class="nav4" href="#np-17-2">17-2 为什么用网格法，不直接上 MCMC</a>
     <a class="nav4" href="#np-17-3">17-3 四行骨架</a>
@@ -1161,6 +1163,99 @@ p(T)      先验：不看磨损时，哪些年份可能（形制、石材、工�
 p(D | T)  似然：如果真是 T 年，观测到的磨损有多大概率出现
 p(T | D)  后验：相乘再归一化</code></pre>
 
+<h4 id="np-17-1w">17-1w 什么是 PDF：密度不是概率</h4>
+
+<p>PDF = <b>probability density function</b>，概率密度函数。它和上一节 17-1y 的 CDF 是一对，<b>先看 PDF 再看 CDF</b> 更顺。</p>
+
+<div class="note">
+<b>PDF 不直接给概率，它给的是「浓度」，概率是它下面的面积：</b>
+$P(a \lt X \lt b) = \int_a^b f(x)\,dx$
+</div>
+
+<table>
+  <tr><th>你问</th><th>PDF 回答</th><th>怎么看</th></tr>
+  <tr><td>「日均 110 人有多常见？」</td><td>$f(110) = 0.0279$</td><td><b>不是 2.79%</b>，是每单位区间的浓度</td></tr>
+  <tr><td>「日均在 100～120 之间有多常见？」</td><td>$\int_{100}^{120} f(x)dx \approx 0.55$</td><td>这块面积才是概率</td></tr>
+</table>
+
+<p class="subhead"><b>对数正态的密度式，逐项拆开看</b></p>
+
+<p>代码里 <code>lognorm.pdf(q_need, s=0.13, scale=110)</code> 算的就是这个函数：</p>
+
+<div class="note">
+$f(x) = \frac{1}{x\,\sigma\sqrt{2\pi}}\; \exp\!\left[-\frac{(\ln x - \ln m)^2}{2\sigma^2}\right]$
+</div>
+
+<table>
+  <tr><th>这一块</th><th>含义</th><th>本案例里的数</th></tr>
+  <tr><td>$x$</td><td>自变量（日均踩踏次数）</td><td>110 这种数</td></tr>
+  <tr><td>$m$</td><td>中位数（代码里的 <code>scale=</code>）</td><td>110</td></tr>
+  <tr><td>$\sigma$</td><td><b>对数尺度</b>的宽度（代码里的 <code>s=</code>）</td><td>0.13（似然）/ 0.4（先验）</td></tr>
+  <tr><td>$\frac{1}{x\sigma\sqrt{2\pi}}$</td><td>归一化常数，顺带把 $x$ 放进了分母</td><td>在 $x=110$ 处 $\approx 0.0279$</td></tr>
+  <tr><td>$\exp[-\cdots]$</td><td>钟形，但横轴是 $\ln x$，所以画在山峰上是<b>右偏</b>的</td><td>$x$ 越远离 110，掉得越快</td></tr>
+</table>
+
+<p><b>为什么 $x$ 在分母？</b>因为「在对数尺度上是正态」：令 $z=\ln x$，$z$ 服从 $N(\ln m, \sigma^2)$，密度是 $\frac{1}{\sigma\sqrt{2\pi}}e^{-z^2/(2\sigma^2)}$；换成 $x$ 要乘 $\frac{dz}{dx}=\frac{1}{x}$，于是分母多出个 $x$。这是变量替换的雅可比因子。</p>
+
+<p><b>为什么前面那个常数是 $\frac{1}{\sigma\sqrt{2\pi}}$？</b>为了让整条曲线下的面积等于 1。它来自高斯积分 $\int_{-\infty}^{+\infty}e^{-t^2/2}dt=\sqrt{2\pi}$ —— 这个常数不是拍出来的，是被「总面积必须为 1」逼出来的。</p>
+
+<p class="subhead"><b>三条性质</b></p>
+
+<table>
+  <tr><th>性质</th><th>数学说法</th><th>为什么</th></tr>
+  <tr><td>非负</td><td>$f(x) \ge 0$</td><td>密度不可能是负的</td></tr>
+  <tr><td>总面积 1</td><td>$\int_{-\infty}^{+\infty} f(x)dx = 1$</td><td>总概率必然是 100%</td></tr>
+  <tr><td>面积为概率</td><td>$P(a \lt X \lt b) = \int_a^b f$</td><td>这就是定义</td></tr>
+</table>
+
+<div class="bad box">
+<b>密度可以大于 1，这不算错。</b>
+例：$X \sim N(0, 0.1^2)$ 在 0 处的密度是 $1/(0.1\sqrt{2\pi}) \approx 3.99 \gt 1$ —— 因为密度是「每单位长度的概率」，单位很窄时数值自然大。
+只有「面积」才必须 ≤ 1。
+</div>
+
+<p class="subhead"><b>它和离散版的 <code>post</code> 什么关系</b></p>
+
+<p>我们的年份网格是离散的，所以代码里 <code>post</code> 是<b>概率质量</b>（点概率，加起来 = 1），而 <code>lognorm.pdf</code> 给的是<b>密度</b>（积分才是 1）。两者靠格宽 $\Delta$ 换算：$p_i \approx f(x_i)\Delta$。</p>
+
+<p>本案例 $\Delta = 1$ 年，于是数值上看起来差不多，但<b>概念不同</b>。做比较时（谁的似然更大）常数因子 $\Delta$ 和归一化常数都会约掉，所以直接比 <code>pdf</code> 值没问题 —— 这正是 17-1x 说「量纲不会被乘坏」的原因。</p>
+
+<p class="subhead"><b>一个容易混的地方：中位数 ≠ 均值</b></p>
+
+<div class="note">
+$E(X) = m\,e^{\sigma^2/2}$
+</div>
+
+<table>
+  <tr><th>$\sigma$</th><th>均值 / 中位数</th><th>本案例</th></tr>
+  <tr><td>0.4（先验，人流波动）</td><td>$e^{0.08} \approx 1.083$ 倍</td><td>中位 110 → 均值 119</td></tr>
+  <tr><td>0.13（似然，观测误差）</td><td>$e^{0.00845} \approx 1.0085$ 倍</td><td>中位 110 → 均值 111</td></tr>
+</table>
+
+<p><code>scale=</code> 填的是<b>中位数</b>，不是均值。填错的话整条曲线右移约 8%（σ=0.4 时）。</p>
+
+<p class="subhead"><b>实测：这条曲线在几个关键点的值</b></p>
+
+<p>（$m = 110$，$\sigma = 0.13$，即似然那把尺子）</p>
+
+<table>
+  <tr><th>$q_{need}$（人/天）</th><th><code>lognorm.pdf</code> 值</th><th>读法</th></tr>
+  <tr><td><code>39</code></td><td><code>1.20e-15</code></td><td>几乎不可能</td></tr>
+  <tr><td><code>94</code></td><td><code>1.57e-02</code></td><td>有点低</td></tr>
+  <tr><td><code>110</code></td><td><code>2.79e-02</code></td><td>正常（中位）</td></tr>
+  <tr><td><code>132</code></td><td><code>8.70e-03</code></td><td>偏低</td></tr>
+  <tr><td><code>638</code></td><td><code>9.51e-43</code></td><td>完全不可能</td></tr>
+</table>
+
+<p>从 39 到 638，密度掉了 28 个数量级 —— 这就是为什么后验几乎只认 1833～1899 那一段：别的年份要求的人流量，在「人对人流量的信念」里几乎不可能出现。</p>
+
+<p>曲线峰值出现在 $x = m e^{-\sigma^2}$ 附近，本案例约 0.028（在 108 左右）。</p>
+
+<div class="ok box">
+<b>一句话记法：</b>PDF 是<b>尺子</b>，量的是「这个数有多合理」；CDF 是<b>累计人头</b>，量的是「不超过这个数的概率」。
+取分位用的是 CDF（见 <a href="#np-17-1y">17-1y</a> 和 <a href="#np-17-6x">17-6x</a>），打分用的是 PDF。
+</div>
+
 <h4 id="np-17-1x">17-1x 为什么是"乘"，量纲为什么不会被乘坏</h4>
 <p><b>从条件概率推：</b> p(A|B) = p(A∩B)/p(B)，而 p(A∩B) = p(B|A)·p(A)，代进去得 p(T|D) = p(T)·p(D|T) / p(D)。分母 p(D) 与 T 无关，是所有年份共用的一个常数，直接扔掉，写成 ∝。</p>
 <p><b>所以先验根本不必先归一化。</b>任何乘进去的常数最后都会被 <code>post /= post.sum()</code> 吸收掉。但有一条纪律：<b>同一次计算里，各点的先验必须是同一种尺度</b>（要么都是概率、要么都是密度）。一处填概率、一处填密度，等于偷偷给某些年份加了权重。</p>
@@ -1189,7 +1284,7 @@ p(T | D)  后验：相乘再归一化</code></pre>
 </ul>
 <div class="box ok"><b>所以 <code>np.cumsum(post)</code> 就是离散版的积分。</b>「累积和」和「累积分布」是同一个东西的两种叫法。</div>
 
-<h4>三条性质（<code>searchsorted</code> 能用的前提）</h4>
+<p class="subhead"><b>三条性质（<code>searchsorted</code> 能用的前提）</b></p>
 <table>
 <tr><th>性质</th><th>数学说法</th><th>为什么</th></tr>
 <tr><td><b>单调不减</b></td><td>$x_1 \lt x_2 \Rightarrow F(x_1)\le F(x_2)$</td><td>加的都是非负数</td></tr>
@@ -1264,7 +1359,7 @@ post  /= post.sum()                                 # 归一化，一步都不�
 post /= post.sum()          # 归一化：除完总和才是 1
 assert abs(post.sum() - 1.0) &lt; 1e-12</code></pre>
 
-<h4>别把三种「归一化」搞混</h4>
+<p class="subhead"><b>别把三种「归一化」搞混</b></p>
 <table>
 <tr><th>说法</th><th>做法</th><th>结果</th><th>用在哪</th></tr>
 <tr><td><b>概率归一化</b>（这里）</td><td>除以总和</td><td>总和 = 1，比例不变</td><td>后验、权重、离散分布</td></tr>
@@ -1333,7 +1428,7 @@ assert abs(post.sum() - 1.0) &lt; 1e-12</code></pre>
 <pre><code>years_grid = np.arange(1600, 2026.0)   # [1600, 1601, ..., 2025]，共 426 个</code></pre>
 <p><code>np.arange(起点, 终点)</code> <b>左闭右开</b>：终点写 2026，最后一个数是 2025 —— 这正好避开 <code>T = 0</code> 的除零。</p>
 
-<h4>它的真正价值：全链路对齐</h4>
+<p class="subhead"><b>它的真正价值：全链路对齐</b></p>
 <p>后面每个数组都从 <code>grid</code> 派生，<b>等长、同索引</b>。第 i 位永远是同一个年份：</p>
 <table>
 <tr><th>索引 i</th><th>0</th><th>1</th><th>…</th><th>274</th><th>…</th><th>425</th></tr>
@@ -1347,14 +1442,14 @@ assert abs(post.sum() - 1.0) &lt; 1e-12</code></pre>
 <pre><code>grid[np.searchsorted(c, 0.5)]    # 位置 270 → 年份 1870</code></pre>
 <div class="box ok"><b><code>searchsorted</code> 给的是位置，<code>grid</code> 负责把位置翻译回年份。</b>这就是它必须一直拿在手里的原因 —— 中途丢了它，结果只是「第 270 个点」，说不出是哪一年。</div>
 
-<h4>三条对齐规则</h4>
+<p class="subhead"><b>三条对齐规则</b></p>
 <ol>
 <li><b>所有数组都从 <code>grid</code> 派生</b>：<code>T = 2026 - grid</code>、<code>q_need = N/(365*T)</code>、<code>prior</code>、<code>lik</code> 同长度。绝不手工另造一个列表，长度一错后面全是位置错位。</li>
 <li><b>只有 <code>grid</code> 存年份</b>，其余都是数值。不要中途把年份和流量混进同一个变量。</li>
 <li><b>取结果一律 <code>grid[...]</code></b>，不要自己加减换算。</li>
 </ol>
 
-<h4>两个坑</h4>
+<p class="subhead"><b>两个坑</b></p>
 <table>
 <tr><th>写法</th><th>后果</th></tr>
 <tr><td><code>list(range(1600, 2026))</code></td><td>列表不能 <code>2026 - grid</code>、不能 <code>clip</code>，每步都得手写循环</td></tr>
@@ -1362,7 +1457,7 @@ assert abs(post.sum() - 1.0) &lt; 1e-12</code></pre>
 </table>
 <p><code>arange</code> 的语义更直白：起点、终点、步长 1。</p>
 
-<h4>命名与自检</h4>
+<p class="subhead"><b>命名与自检</b></p>
 <p>存进 <code>stair_model.py</code> 建议叫 <b><code>years_grid</code></b>：<code>grid</code> 在别的语境里含义太多（网格搜索、图像网格），加前缀一眼看懂。</p>
 <pre><code># 四条自检
 assert len(years_grid) == len(post) == 426
@@ -1401,7 +1496,7 @@ p95 = grid[np.searchsorted(cdf, 0.95)]</code></pre>
 <h4 id="np-17-6x">17-6x 三个取分位的函数：cumsum / searchsorted / argmax</h4>
 <p>拿到 <code>post</code>（每个年份的概率）之后，只剩三行。三个函数各干一件事，别混用。</p>
 
-<h4>① <code>np.cumsum(a)</code>：累积和</h4>
+<p class="subhead"><b>① <code>np.cumsum(a)</code>：累积和</b></p>
 <p>把数组从头开始一项一项加起来，<b>返回等长数组</b>，最后一项等于总和。</p>
 <table>
 <tr><th>输入 post</th><td>0.1</td><td>0.4</td><td>0.3</td><td>0.2</td></tr>
@@ -1410,7 +1505,7 @@ p95 = grid[np.searchsorted(cdf, 0.95)]</code></pre>
 <p><b>它给的是累积分布函数（CDF）：</b><code>c[i]</code> = 「年份 ≤ grid[i] 的总概率」。这是取分位必须的前置步骤。</p>
 <p><b>坑：</b>多项浮点相加，最后一项可能是 <code>1.0000000000000002</code> 而不是 1。不要用 <code>c[-1] == 1.0</code> 判断，要用 <code>abs(c[-1] - 1) &lt; 1e-12</code>。</p>
 
-<h4>② <code>np.searchsorted(c, v)</code>：在有序数组里找一个值该插在哪</h4>
+<p class="subhead"><b>② <code>np.searchsorted(c, v)</code>：在有序数组里找一个值该插在哪</b></p>
 <p>二分查找，返回下标 <code>i</code>，使得 <code>c[i-1] &lt; v ≤ c[i]</code>（默认 <code>side='left'</code>）。<b>也就是「累计概率第一次达到 v 的那一年」。</b></p>
 <table>
 <tr><th>c</th><td>0.1</td><td>0.5</td><td>0.8</td><td>1.0</td></tr>
@@ -1426,7 +1521,7 @@ p95 = grid[np.searchsorted(cdf, 0.95)]</code></pre>
 <li><b>它返回的是位置，不是值</b>。必须再用这个位置去 <code>grid</code> 里取年份：<code>grid[np.searchsorted(c, 0.5)]</code>。</li>
 </ul>
 
-<h4>③ <code>post.argmax()</code>：最大值在哪一位</h4>
+<p class="subhead"><b>③ <code>post.argmax()</code>：最大值在哪一位</b></p>
 <p>返回<b>最大值的下标</b>，不是最大值本身。想要值还得 <code>post.max()</code>。</p>
 <pre><code>post.argmax()   # 比如 273
 post.max()      # 比如 0.0198</code></pre>
@@ -1437,7 +1532,7 @@ post.max()      # 比如 0.0198</code></pre>
 <li><b>众数 ≠ 中位数</b>。众数是「最高的那一根」，中位数是「累计到一半的那一年」。1873 是众数，1870 是中位数。</li>
 </ul>
 
-<h4>三行组合</h4>
+<p class="subhead"><b>三行组合</b></p>
 <pre><code>c = np.cumsum(post)                                  # 累积概率
 p5, p50, p95 = (grid[np.searchsorted(c, v)] for v in (0.05, 0.5, 0.95))
 mode = grid[post.argmax()]</code></pre>

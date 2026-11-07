@@ -146,6 +146,7 @@
 <a class="nav3" href="#mcm-6">6. 四个坑</a>
 <a class="nav3" href="#mcm-7">7. 我该怎么用</a>
 <a class="nav3" href="#np-18">18. 贝叶斯合成：网格法把 462 年压到 68 年</a>
+    <a class="nav3" href="#np-19">19. 数据驱动：六行重复代码收成一张表</a>
     <a class="nav4" href="#np-18-0">18-0 零前提入门：先把这些词弄明白</a>
     <a class="nav4" href="#np-18-1">18-1 式 (5)：后验 ∝ 先验 × 似然</a>
     <a class="nav4" href="#np-18-2">18-2 什么是 PDF：密度不是概率</a>
@@ -1767,6 +1768,88 @@ mode = grid[post.argmax()]</code></pre>
 这三条过了，分位数才有可能对。</div>
 <div class="bad box"><b>「区间宽 = 0」是万能报警。</b>真后验不可能宽度为 0。一旦看到 0、1、几百这种怪数字，先回去查先验和似然的支撑有没有交集，别急着调 σ。</div>
 
+<h3 id="np-19">19. 数据驱动：六行重复代码收成一张表</h3>
+
+<h4 id="np-19-1">19-1 问题：六个几乎一样的调用</h4>
+
+<p>敏感性分析要对六个参数各做一次「只改它、其他不动」的重算。最直接的写法是六行：</p>
+
+<pre><code>rows.append(("K", "磨损系数",   invert_flow(V_mm3, T_years, K=K_WEAR * factor)))
+rows.append(("F", "法向力",     invert_flow(V_mm3, T_years, F=LOAD_N * factor)))
+rows.append(("s", "滑移距离",   invert_flow(V_mm3, T_years, s=SLIP_M * factor)))
+rows.append(("H", "材料硬度",   invert_flow(V_mm3, T_years, H=HARDNESS_PA * factor)))
+rows.append(("T", "使用年数",   invert_flow(V_mm3, T_years, T_years=T_years * factor)))
+rows.append(("V", "坑体积",     invert_flow(V_mm3 * factor, T_years)))</code></pre>
+
+<p><b>六行只有一处不同：改哪个参数。</b>其余部分逐字重复。这类代码的毛病不在「丑」，在于改起来容易漏：想顺手记一列对数变化，六行都要改；想调换打印顺序，六行的书写顺序说了算，得一行行挪。</p>
+
+<h4 id="np-19-2">19-2 写法：先把「要做什么」写成数据，再让循环去读</h4>
+
+<p>核心思路一句话：<b>变化的写成表，不变的写进循环。</b></p>
+
+<pre><code>cases = [
+    ("K", "磨损系数",   {"K": K_WEAR * factor}),
+    ("F", "法向力",     {"F": LOAD_N * factor}),
+    ("s", "滑移距离",   {"s": SLIP_M * factor}),
+    ("H", "材料硬度",   {"H": HARDNESS_PA * factor}),
+    ("T", "使用年数",   {"T_years": T_years * factor}),
+    ("V", "坑体积",     {"V_mm3": V_mm3 * factor}),
+]
+
+rows = []
+for sym, cn, kw in cases:
+    rows.append((sym, cn, invert_flow(V_mm3, T_years, **kw)))</code></pre>
+
+<p>现在「六行」变成「六行数据 + 三行循环」。三种好处：</p>
+
+<ul>
+<li>加一个参数 = 加一行数据，位置就是输出位置</li>
+<li>想在每行多记一列（对数变化、绝对误差），只改循环体一处</li>
+<li>表格顺序 = <code>cases</code> 顺序，想按分子分母排就重排列表，不用挪代码</li>
+</ul>
+
+<h4 id="np-19-3">19-3 那个 <code>**kw</code> 是什么</h4>
+
+<p>叫<b>字典解包</b>。它把字典拆成一个个关键字参数：</p>
+
+<pre><code>invert_flow(V_mm3, T_years, **{"K": 0.004})     # 等价于 K=0.004
+invert_flow(V_mm3, T_years, **{})               # 等价于什么都不传</code></pre>
+
+<div class="warn box">
+字典的 key <b>必须和形参名完全一致</b>。写成 <code>{"HARDNESS_PA": ...}</code> 会报 <code>TypeError: invert_flow() got an unexpected keyword argument 'HARDNESS_PA'</code> —— 形参叫 <code>H</code>，不是常量名。
+</div>
+
+<h4 id="np-19-4">19-4 三种写法对照</h4>
+
+<table>
+<tr><th>写法</th><th>加一个参数</th><th>顺便多记一列</th><th>读代码的成本</th></tr>
+<tr><td>六行显式</td><td>加一行，还得手动插到正确位置</td><td>六处都要改</td><td>最低，一眼看懂</td></tr>
+<tr><td>cases + 循环</td><td>加一行数据</td><td>循环体改一处</td><td>要先懂 <code>**kw</code></td></tr>
+<tr><td>函数式（<code>functools.partial</code>）</td><td>加一行</td><td>要再包一层</td><td>最高，这里没必要</td></tr>
+</table>
+
+<h4 id="np-19-5">19-5 四个坑</h4>
+
+<div class="bad box">
+<ol>
+<li><b>key 写成常量名</b>：<code>{"K_WEAR": ...}</code> 直接 TypeError。key 是<b>形参名</b>，不是常量名。</li>
+<li><b>把 dict 的顺序当输出顺序</b>：输出顺序由 <code>cases</code> 列表决定，dict 里只有一个键，顺序无意义。</li>
+<li><b>变量名偷懒</b>：<code>for a, b, c in cases</code> 三天后自己都看不懂；用 <code>sym, cn, kw</code>，别用 <code>name</code>（分不清指符号还是中文名）。</li>
+<li><b>把 <code>factor</code> 塞进 dict</b>：<code>factor</code> 是倍数，不是 <code>invert_flow</code> 的参数，塞进去必 TypeError。它只该出现在右值里：<code>K_WEAR * factor</code>。</li>
+</ol>
+</div>
+
+<h4 id="np-19-6">19-6 什么时候<b>别</b>用它</h4>
+
+<ul>
+<li><b>只有两三行</b>：显式写出来更直接，「抽象」的成本高于收益。</li>
+<li><b>每行调用形态不同</b>：比如一个改分母、一个改函数、一个换整个表达式 —— 列表表达不了这种差异，硬塞会写出 <code>if sym == "V": ...</code> 的分支，比六行还糟。</li>
+<li><b>判据</b>：只有一处不同的重复 <b>≥ 4 次</b>，才值得抽成表。三条以下，写直白点。</li>
+</ul>
+
+<div class="ok box">
+本案例实测：六行算出来 <code>27.666</code>（K、F、s、T）与 <code>110.664</code>（H、V），对数变化全部 <code>±0.693147</code>。<b>只改一处不同的重复</b>，正是抽成表最典型的场景。
+</div>
 <h2 id="mcm">十一、MCM 十年真题手册怎么用</h2>
 <p>材料：<code>D:\Program Files\qq\MCM十年真题_方法与代码_论文技巧.html</code>（685 行、11 段代码、9 章）。它是一份"比赛当天手册"，价值在<b>广度</b>和<b>骨架</b>，不在推导。</p>
 

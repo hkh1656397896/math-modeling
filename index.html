@@ -209,6 +209,13 @@
 <a class="nav4" href="#np-20-5">20-5 回溯：从表里读出分段</a>
 <a class="nav4" href="#np-20-6">20-6 λ 扫描：段数不是拍脑袋定的</a>
 <a class="nav4" href="#np-20-7">20-7 三个坑</a>
+<a class="nav3" href="#np-21">21. 分段识别二刷：条件、思路、自查清单</a>
+<a class="nav4" href="#np-21-1">21-1 条件：手上有什么，要交什么</a>
+<a class="nav4" href="#np-21-2">21-2 我当时卡住的九个问题</a>
+<a class="nav4" href="#np-21-3">21-3 重写提纲（七步，只写做什么）</a>
+<a class="nav4" href="#np-21-4">21-4 卡住时的诊断表</a>
+<a class="nav4" href="#np-21-5">21-5 验收数字（写完对这三个）</a>
+<a class="nav4" href="#np-21-6">21-6 写完自证三条</a>
 <a class="nav2" href="#mcm">十一、MCM 十年真题手册怎么用</a>
 <a class="nav3" href="#mcm-1">1. 它的定位：手册，不是教材</a>
 <a class="nav3" href="#mcm-2">2. 11 段代码：每段解决什么问题</a>
@@ -2060,6 +2067,97 @@ segs.reverse()</code></pre>
 
 $$\mathrm{cost}(i,j)=\left(S_2[j]-S_2[i]\right)-\frac{\left(S[j]-S[i]\right)^2}{j-i}$$
 
+
+<h3 id="np-21">21. 分段识别二刷：条件、思路、自查清单</h3>
+<p>这一节<b>不给代码</b>，只给「输入是什么、要产出什么、每一步的判据」。二刷时照着清单自己写，写完用 21-5 的数字对答案。</p>
+
+<h4 id="np-21-1">21-1 条件：手上有什么，要交什么</h4>
+<table>
+<tr><th style="width:22%">项目</th><th>内容</th></tr>
+<tr><td>输入</td><td><code>d</code>：20 个数（mm），第 1–20 级台阶的最大磨损深度，合计 98.0</td></tr>
+<tr><td>超参数</td><td><code>lam</code>：切一刀的罚款，讲义取 8</td></tr>
+<tr><td>要产出</td><td>每段的起止（连续区间）、每段均值与标准差、最优段数 <code>k</code>、总代价</td></tr>
+<tr><td>硬约束</td><td>段必须<b>连续</b>（不能聚类）；段数<b>由 λ 决定</b>，不是事先指定</td></tr>
+<tr><td>用途</td><td>给论文提供「磨损沿纵深不均匀」的客观依据，而不是「肉眼可见」</td></tr>
+</table>
+
+<h4 id="np-21-2">21-2 我当时卡住的九个问题</h4>
+<table>
+<tr><th style="width:34%">问题</th><th>一句话答案</th></tr>
+<tr><td>为什么要用 ∞</td><td>表示「此状态不可能」；$\infty+$有限 $=\infty$，所以 <code>min</code> 会自动淘汰它，不用写 if</td></tr>
+<tr><td><code>dp[0][0]=0</code> 是什么</td><td>唯一的递推起点：0 级切 0 段代价为 0；第 0 行其余全是 ∞（0 段覆盖 j 级不可能）</td></tr>
+<tr><td>公式里的 <code>min</code> 在代码里去哪了</td><td>就是内层的 <code>if c &lt; best</code>。候选 <code>c</code> 不等于 <code>dp[k][j]</code>，<code>dp[k][j]</code> 是比完之后的结果</td></tr>
+<tr><td><code>k</code> 是什么</td><td>段数。<code>dp[k][n]</code> = 「强制切成 k 段」的最小总代价</td></tr>
+<tr><td>「最优 k」怎么来</td><td>在 <code>dp[1..K_max][n]</code> 里取最小值；<code>argmin</code> 返回的位置要 <code>+1</code> 才是段数</td></tr>
+<tr><td>回溯在干什么</td><td><code>dp</code> 只存代价、不存分段；<code>back</code> 存「最后一段从哪开始」，从 <code>(k_best, n)</code> 一路退到 0 就还原出切点</td></tr>
+<tr><td>λ 怎么定</td><td>超参数，<b>不能唯一确定</b>。本题取 8 ≈ 「均值差 2 mm 才值得切」；$\lambda\in[7.5,10)$ 稳定给出 4 段</td></tr>
+<tr><td>为什么切割要有代价</td><td>不罚的话最优永远是「每级一段」（SS=0），方法就废了；λ 是复杂度惩罚，等价于奥卡姆剃刀</td></tr>
+<tr><td><code>dp</code>/<code>back</code> 是库里的吗</td><td>不是，自己起的变量名；<code>dp</code> 是行业惯例，可以改但全文件要统一</td></tr>
+</table>
+
+<h4 id="np-21-3">21-3 重写提纲（七步，只写做什么）</h4>
+<ol>
+<li><b>写 <code>cost(i, j)</code></b>：左闭右开切片，返回段内离差平方和。<br>判据：<code>cost(d,0,5)=10.0</code>、<code>cost(d,5,10)=2.8</code>、<code>cost(d,0,20)=81.8</code> —— 三个不对就别往下走。</li>
+<li><b>建表</b>：<code>dp</code> 全填 $\infty$、<code>back</code> 全 0（必须是整数型），再把 <code>dp[0][0]</code> 设成 0。</li>
+<li><b>填表</b>：三层循环，顺序 <code>k → j → i</code>；候选值 $=$ <code>dp[k-1][i] + cost(d,i,j) + lam</code>；只在<b>严格小于</b>时更新，同时记下 <code>best_i</code>。</li>
+<li><b>选最优 k</b>：取最后一列 <code>dp[1..K_max][n]</code>，<code>argmin</code> 再 <code>+1</code>。</li>
+<li><b>回溯</b>：从 <code>(k_best, n)</code> 开始，每步读 <code>back[k][j]</code> 得到这一段起点，把 <code>j</code> 移到该起点，直到 <code>k</code> 减到 0；结果要 <code>reverse</code>。</li>
+<li><b>统计</b>：每段算均值、标准差、级数；打印时把 0 起半开区间翻译成「第 a+1–b 级」。</li>
+<li><b>λ 扫描</b>：几个 λ 各跑一遍做成表，证明段数不是精调出来的。</li>
+</ol>
+
+<div class="warn box">
+<b>两个已知坑</b>：① 取最后一列时切片写成 <code>dp[1:K_max, n]</code> 会漏掉 <code>k=K_max</code> 那一行，应写 <code>dp[1:K_max+1, n]</code> 或 <code>dp[1:, n]</code>；② f-string 里面再套双引号（<code>{"乘2":>6}</code>）只有 Python 3.12+ 支持，换 3.9 会 SyntaxError，外层改用单引号即可。
+</div>
+
+<h4 id="np-21-4">21-4 卡住时的诊断表</h4>
+<table>
+<tr><th style="width:38%">症状</th><th>最可能的原因</th></tr>
+<tr><td>整表全是 ∞</td><td>忘了 <code>dp[0][0]=0</code>；或 <code>k</code> 从 0 开始循环，把第 0 行重算成 ∞</td></tr>
+<tr><td>出现 <code>nan</code></td><td>某处做了 $\infty-\infty$；或 <code>cost</code> 里除零</td></tr>
+<tr><td>只有第 0 行有值</td><td><code>dp[k][j] = best</code> 缩进错了，跑到两层循环外</td></tr>
+<tr><td><code>dp[1][1]</code> 不等于 λ</td><td><code>cost</code> 切片写成 <code>d[i:j+1]</code>（多取一个），单元素段的 SS 不为 0</td></tr>
+<tr><td>数值比手算大一圈</td><td>λ 加了两遍（<code>dp[k-1][i]</code> 里已含，外层又加）</td></tr>
+<tr><td><code>dp[k][j]</code> 恒为 0</td><td><code>best</code> 初始化成 0 而不是 $\infty$</td></tr>
+</table>
+
+<h4 id="np-21-5">21-5 验收数字（写完对这三个）</h4>
+<p><b>① 小例子</b>：<code>d=[3,4,5]</code>、<code>lam=1</code> 时 dp 表应为</p>
+<pre><code>k=0    0.0    inf    inf    inf
+k=1    inf    1.0    1.5    3.0
+k=2    inf    inf    2.0    2.5
+k=3    inf    inf    inf    3.0</code></pre>
+<p><b>② λ 扫描</b>（20 级真实数据）：</p>
+<table>
+<tr><th>λ</th><th>最优段数</th><th>总代价</th><th>分段</th></tr>
+<tr><td>0.2</td><td>18</td><td>3.60</td><td>几乎一级一段</td></tr>
+<tr><td>2</td><td>5</td><td>20.90</td><td>1–2 / 3–5 / 6–10 / 11–15 / 16–20</td></tr>
+<tr><td>5</td><td>5</td><td>35.90</td><td>同上</td></tr>
+<tr><td><b>8</b></td><td><b>4</b></td><td><b>50.40</b></td><td><b>1–5 / 6–10 / 11–15 / 16–20</b></td></tr>
+<tr><td>10</td><td>3</td><td>58.40</td><td>1–5 / 6–10 / 11–20</td></tr>
+<tr><td>20</td><td>2</td><td>88.00</td><td>1–10 / 11–20</td></tr>
+</table>
+<p><b>③ 四段统计</b>（λ=8）：1–5 均值 5.00、6–10 为 2.20（最浅）、11–15 为 7.20（最深）、16–20 为 5.20；最深处比最浅处大 3.3 倍。</p>
+<p><b>④ λ 区间</b>（扫 0–40，步长 0.05，看段数在哪段区间稳定）：</p>
+<table>
+<tr><th>段数</th><th>λ 区间</th><th>段数</th><th>λ 区间</th></tr>
+<tr><td>18</td><td>[0, 0.35)</td><td>4</td><td><b>[7.50, 10.00)</b></td></tr>
+<tr><td>15</td><td>[0.35, 0.50)</td><td>3</td><td>[10.00, 19.65)</td></tr>
+<tr><td>9</td><td>[0.50, 1.50)</td><td>2</td><td>[19.65, 33.80)</td></tr>
+<tr><td>8</td><td>[1.50, 1.80)</td><td>1</td><td>[33.80, ∞)</td></tr>
+<tr><td>5</td><td>[1.80, 7.50)</td><td></td><td></td></tr>
+</table>
+
+<h4 id="np-21-6">21-6 写完自证三条</h4>
+<ol>
+<li>首尾相接：<code>cuts[0][0] == 0</code>、<code>cuts[-1][1] == n</code>、<code>len(cuts) == k_best</code>。</li>
+<li>记账相符：$\sum \mathrm{cost}(d,a,b)+\lambda k_{best}$ 必须等于 <code>total</code>。</li>
+<li>顶上限警告：若 <code>k_best == K_max</code>，说明 λ 太小或上限不够，结果是被截断的假答案。</li>
+</ol>
+
+<div class="ok box">
+<b>论文里可以这么写</b>：以 λ=8 为例（其含义是相邻段平均磨损差需超过约 2 mm 才视为不同区段），动态规划把 20 级台阶划分为 4 段，段内平均磨损深度依次为 5.00、2.20、7.20、5.20 mm，相邻段最大相差 3.3 倍。λ 在 [7.5, 10) 内变化时段数保持为 4，说明该结论对惩罚系数的具体取值不敏感。
+</div>
 
 <h2 id="mcm">十一、MCM 十年真题手册怎么用</h2>
 <p>材料：<code>D:\Program Files\qq\MCM十年真题_方法与代码_论文技巧.html</code>（685 行、11 段代码、9 章）。它是一份"比赛当天手册"，价值在<b>广度</b>和<b>骨架</b>，不在推导。</p>

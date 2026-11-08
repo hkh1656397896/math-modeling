@@ -61,15 +61,15 @@
   .subhead{margin:18px 0 6px;font-weight:600;color:#1f2328}
 </style>
 <!-- 公式渲染：KaTeX（只处理正文里的 $...$，pre/code 里的 $ 不动） -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
-        onload="renderMathInElement(document.body,{delimiters:[{left:'$',right:'$',display:false}],ignoredTags:['pre','code','script','style','textarea'],throwOnError:false});"></script>
+<link rel="stylesheet" href="assets/katex/katex.min.css">
+<script defer src="assets/katex/katex.min.js"></script>
+<script defer src="assets/katex/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],ignoredTags:['pre','code','script','style','textarea'],throwOnError:false});"></script>
 </head>
 <body id="top">
 
 <h1>数学建模学习笔记</h1>
-<p class="meta">把数学建模从头到尾走一遍：环境 → numpy → 建模 → 求解 → 不确定性 → 表达；楼梯建造年代那道题作为第一个完整练手案例 · 最后更新 2026-11-01</p>
+<p class="meta">把数学建模从头到尾走一遍：环境 → numpy → 建模 → 求解 → 不确定性 → 表达；楼梯建造年代那道题作为第一个完整练手案例 · 最后更新 2026-11-08</p>
 
 <nav>
 <b>目录</b>
@@ -116,27 +116,99 @@
 <a class="nav4" href="#np-7-4">有 nan 时用 nanmean</a>
 <a class="nav3" href="#np-8">8. std 和 nan 到底是什么</a>
 <a class="nav3" href="#np-9">9. mask（布尔掩码）是什么</a>
-<a class="nav3" href="#np-10">10. rng = np.random.default_rng(42)</a>
-<a class="nav4" href="#np-10-1">为什么它是对象而不是函数</a>
-<a class="nav4" href="#np-10-2">常用取样方法</a>
+<a class="nav3" href="#np-10">10. rng = np.random.default_rng(42) 是什么</a>
+<a class="nav4" href="#np-10-1">为什么它是个对象而不是一个函数</a>
+<a class="nav4" href="#np-10-2">常用取样方法（都用 rng.xxx）</a>
 <a class="nav4" href="#np-10-2c">为什么 random() 只给 0~1 的小数</a>
-<a class="nav4" href="#np-10-2b">抽出来的东西对不对</a>
-<a class="nav4" href="#np-10-3">新旧 API 对照</a>
+<a class="nav4" href="#np-10-2b">抽出来的东西对不对：两个自检</a>
+<a class="nav4" href="#np-10-3">新旧 API 对照（老代码里见到的是左边）</a>
 <a class="nav3" href="#np-11">11. np.exp：e 的 x 次方</a>
+<a class="nav4" href="#np-11-1">e 是从哪来的：一个极限</a>
+<a class="nav4" href="#np-11-2">六条性质，够用</a>
+<a class="nav4" href="#np-11-3">np.exp 和 np.e**x 结果一样，但请写 exp</a>
+<a class="nav4" href="#np-11-4">会溢出，也会下溢</a>
+<a class="nav4" href="#np-11-5">它和 lognormal 的关系</a>
 <a class="nav3" href="#np-12">12. lognormal 到底在干什么</a>
+<a class="nav4" href="#np-12-1">三层拆解（都是真实数字，seed=42）</a>
+<a class="nav4" href="#np-12-2">对应的代码</a>
+<a class="nav4" href="#np-12-3">三个“为什么”</a>
+<a class="nav4" href="#np-12-4">右偏是 exp 造成的</a>
+<a class="nav4" href="#np-12-5">两个方向：要 x 还是要 ln x</a>
+<a class="nav4" href="#np-12-6">三处最容易搞反的地方</a>
+<a class="nav4" href="#np-12-7">什么时候不该用</a>
 <a class="nav3" href="#np-13">13. round：四舍五入的三个坑</a>
+<a class="nav4" href="#np-13-1">三种用法</a>
+<a class="nav4" href="#np-13-2">坑一：它是「银行家舍入」，不是四舍五入</a>
+<a class="nav4" href="#np-13-3">坑二：2.675 舍成 2.67</a>
+<a class="nav4" href="#np-13-4">坑三：round 不是格式化</a>
+<a class="nav4" href="#np-13-5">配套：那段代码里的三个统计函数</a>
 <a class="nav3" href="#np-14">14. np.histogram：直方图的数字部分</a>
+<a class="nav4" href="#np-14-1">返回值：两个数组，错位一格</a>
+<a class="nav4" href="#np-14-2">bins=5 是怎么切的</a>
+<a class="nav4" href="#np-14-3">逐段验算（和手工数的一致）</a>
+<a class="nav4" href="#np-14-4">和 plt.hist 的分工</a>
+<a class="nav4" href="#np-14-5">四个常用参数</a>
+<a class="nav4" href="#np-14-6">四个坑</a>
+<a class="nav4" href="#np-14-7">怎么“读”一个直方图</a>
 <a class="nav3" href="#np-15">15. 截断：clip 和「真截断」的区别</a>
+<a class="nav4" href="#np-15-1">做法一：clip，把越界的压到边界</a>
+<a class="nav4" href="#np-15-2">实测：越界比例小就可以忽略</a>
+<a class="nav4" href="#np-15-3">做法二：真截断，丢样本重抽</a>
+<a class="nav4" href="#np-15-4">什么时候 clip 会出事</a>
 <a class="nav3" href="#np-16">16. σ 从哪来：不确定性怎么量化</a>
-<a class="nav3" href="#np-17">17. 蒙特卡洛：把输入的不确定翻译成输出区间</a>
-    <a class="nav4" href="#np-17-0">17-0 为什么需要它：我们手上没有一个确定的输入</a>
-    <a class="nav4" href="#np-17-1">17-1 三步：抽 → 算 → 取分位</a>
-    <a class="nav4" href="#np-17-2">17-2 关键点一：分布的选择就是「你相信什么」</a>
-    <a class="nav4" href="#np-17-3">17-3 关键点二：报中位数和区间，不要报均值</a>
-    <a class="nav4" href="#np-17-4">17-4 关键点三：种子不改变结论，只保证可复现</a>
-    <a class="nav4" href="#np-17-5">17-5 蒙特卡洛 vs 贝叶斯：最容易混的一对</a>
-    <a class="nav4" href="#np-17-6">17-6 四个坑（都真踩过）</a>
-    <a class="nav4" href="#np-17-7">17-7 写完代码的自检清单</a>
+<a class="nav4" href="#np-16-1">正态：σ 就是标准差</a>
+<a class="nav4" href="#np-16-2">均匀：不需要 σ</a>
+<a class="nav4" href="#np-16-3">对数正态：σ 决定跨几个数量级</a>
+<a class="nav4" href="#np-16-4">反推：给了区间怎么定 σ</a>
+<a class="nav4" href="#np-16-5">这三个 σ 的来源</a>
+<a class="nav4" href="#np-16-6">怎么求 σ：四种情形</a>
+<a class="nav4" href="#np-16-7">四个例子（都对到实际数字）</a>
+<a class="nav4" href="#np-16-8">最容易搞反的一点</a>
+<a class="nav3" href="#np-17">17. 蒙特卡洛：把「输入的不确定」翻译成「输出的区间」</a>
+<a class="nav4" href="#np-17-0">17-0 为什么需要它：我们手上没有一个确定的输入</a>
+<a class="nav4" href="#np-17-1">17-1 三步：抽 → 算 → 取分位</a>
+<a class="nav4" href="#np-17-2">17-2 关键点一：分布的选择就是「你相信什么」</a>
+<a class="nav4" href="#np-17-3">17-3 关键点二：报中位数和区间，不要报均值</a>
+<a class="nav4" href="#np-17-4">17-4 关键点三：种子不改变结论，只保证可复现</a>
+<a class="nav4" href="#np-17-5">17-5 蒙特卡洛 vs 贝叶斯：最容易混的一对</a>
+<a class="nav4" href="#np-17-6">17-6 四个坑（都真踩过）</a>
+<a class="nav4" href="#np-17-7">17-7 写完代码的自检清单</a>
+<a class="nav3" href="#np-18">18. 贝叶斯合成：网格法把 462 年压到 68 年</a>
+<a class="nav4" href="#np-18-0">18-0 零前提入门：先把这些词弄明白</a>
+<a class="nav4" href="#np-18-1">18-1 式 (5)：后验 ∝ 先验 × 似然</a>
+<a class="nav4" href="#np-18-2">18-2 什么是 PDF：密度不是概率</a>
+<a class="nav4" href="#np-18-3">18-3 什么是 CDF：cumsum 就是离散版的积分</a>
+<a class="nav4" href="#np-18-4">18-4 为什么是"乘"，量纲为什么不会被乘坏</a>
+<a class="nav4" href="#np-18-5">18-5 为什么用网格法，不直接上 MCMC</a>
+<a class="nav4" href="#np-18-6">18-6 四行骨架</a>
+<a class="nav4" href="#np-18-7">18-7 网格 grid 本身：位置与年份之间的翻译表</a>
+<a class="nav4" href="#np-18-8">18-8 网格怎么取：范围、步长、两端自检</a>
+<a class="nav4" href="#np-18-9">18-9 三个范围别搞混：网格 ⊃ 先验支撑 ⊃ 平台</a>
+<a class="nav4" href="#np-18-10">18-10 梯形先验怎么造</a>
+<a class="nav4" href="#np-18-11">18-11 似然里的 σ 用哪个数（最容易错的一步）</a>
+<a class="nav4" href="#np-18-12">18-12 归一化：把「分数」变成「概率」</a>
+<a class="nav4" href="#np-18-13">18-13 分位数：用累积和，不要用 np.percentile</a>
+<a class="nav4" href="#np-18-14">18-14 三个取分位的函数：cumsum / searchsorted / argmax</a>
+<a class="nav4" href="#np-18-15">18-15 手算一遍：只留三个网格点</a>
+<a class="nav4" href="#np-18-16">18-16 四条自检</a>
+<a class="nav4" href="#np-18-17">18-17 本案例实测（σ=0.13、梯形 [1750,1900]±50）</a>
+<a class="nav4" href="#np-18-18">18-18 哪些是讲义给的，哪些是我推的</a>
+<a class="nav4" href="#np-18-19">18-19 错因卡片：这五处我亲手踩过</a>
+<a class="nav3" href="#np-19">19. 数据驱动：六行重复代码收成一张表</a>
+<a class="nav4" href="#np-19-1">19-1 问题：六个几乎一样的调用</a>
+<a class="nav4" href="#np-19-2">19-2 写法：先把「要做什么」写成数据，再让循环去读</a>
+<a class="nav4" href="#np-19-3">19-3 那个 **kw 是什么</a>
+<a class="nav4" href="#np-19-4">19-4 三种写法对照</a>
+<a class="nav4" href="#np-19-5">19-5 四个坑</a>
+<a class="nav4" href="#np-19-6">19-6 什么时候别用它</a>
+<a class="nav3" href="#np-20">20. 分段识别：动态规划把 20 级台阶切成 4 段</a>
+<a class="nav4" href="#np-20-1">20-1 三种切法，只有一种能用</a>
+<a class="nav4" href="#np-20-2">20-2 cost(i, j)：把一段压成一个数，误差有多少</a>
+<a class="nav4" href="#np-20-3">20-3 为什么不切 20 段：λ 的博弈</a>
+<a class="nav4" href="#np-20-4">20-4 DP：把 52 万种切法压到 2400 次运算</a>
+<a class="nav4" href="#np-20-5">20-5 回溯：从表里读出分段</a>
+<a class="nav4" href="#np-20-6">20-6 λ 扫描：段数不是拍脑袋定的</a>
+<a class="nav4" href="#np-20-7">20-7 三个坑</a>
 <a class="nav2" href="#mcm">十一、MCM 十年真题手册怎么用</a>
 <a class="nav3" href="#mcm-1">1. 它的定位：手册，不是教材</a>
 <a class="nav3" href="#mcm-2">2. 11 段代码：每段解决什么问题</a>
@@ -145,28 +217,6 @@
 <a class="nav3" href="#mcm-5">5. 和我的楼梯项目对照</a>
 <a class="nav3" href="#mcm-6">6. 四个坑</a>
 <a class="nav3" href="#mcm-7">7. 我该怎么用</a>
-<a class="nav3" href="#np-18">18. 贝叶斯合成：网格法把 462 年压到 68 年</a>
-    <a class="nav3" href="#np-19">19. 数据驱动：六行重复代码收成一张表</a>
-    <a class="nav4" href="#np-18-0">18-0 零前提入门：先把这些词弄明白</a>
-    <a class="nav4" href="#np-18-1">18-1 式 (5)：后验 ∝ 先验 × 似然</a>
-    <a class="nav4" href="#np-18-2">18-2 什么是 PDF：密度不是概率</a>
-    <a class="nav4" href="#np-18-3">18-3 什么是 CDF：cumsum 就是离散版的积分</a>
-    <a class="nav4" href="#np-18-4">18-4 为什么是"乘"，量纲为什么不会被乘坏</a>
-    <a class="nav4" href="#np-18-5">18-5 为什么用网格法，不直接上 MCMC</a>
-    <a class="nav4" href="#np-18-6">18-6 四行骨架</a>
-    <a class="nav4" href="#np-18-7">18-7 网格 grid 本身：位置与年份之间的翻译表</a>
-    <a class="nav4" href="#np-18-8">18-8 网格怎么取：范围、步长、两端自检</a>
-    <a class="nav4" href="#np-18-9">18-9 三个范围别搞混：网格 ⊃ 先验支撑 ⊃ 平台</a>
-    <a class="nav4" href="#np-18-10">18-10 梯形先验怎么造</a>
-    <a class="nav4" href="#np-18-11">18-11 似然里的 σ 用哪个数（最容易错的一步）</a>
-    <a class="nav4" href="#np-18-12">18-12 归一化：把「分数」变成「概率」</a>
-    <a class="nav4" href="#np-18-13">18-13 分位数：用累积和，不要用 np.percentile</a>
-    <a class="nav4" href="#np-18-14">18-14 三个取分位的函数：cumsum / searchsorted / argmax</a>
-    <a class="nav4" href="#np-18-15">18-15 手算一遍：只留三个网格点</a>
-    <a class="nav4" href="#np-18-16">18-16 四条自检</a>
-    <a class="nav4" href="#np-18-17">18-17 本案例实测（σ=0.13、梯形 [1750,1900]±50）</a>
-    <a class="nav4" href="#np-18-18">18-18 哪些是讲义给的，哪些是我推的</a>
-<a class="nav4" href="#np-18-19">18-19 错因卡片：这五处我亲手踩过</a>
 </nav>
 
 <h2 id="env">一、环境：装一次，以后都用它</h2>
@@ -1850,6 +1900,167 @@ invert_flow(V_mm3, T_years, **{})               # 等价于什么都不传</code
 <div class="ok box">
 本案例实测：六行算出来 <code>27.666</code>（K、F、s、T）与 <code>110.664</code>（H、V），对数变化全部 <code>±0.693147</code>。<b>只改一处不同的重复</b>，正是抽成表最典型的场景。
 </div>
+<h3 id="np-20">20. 分段识别：动态规划把 20 级台阶切成 4 段</h3>
+
+<p>问题三的前半问：20 级台阶的磨损深度肉眼能看出「有的地方浅、有的地方深」，但「明显」不能写进论文，要有客观标准。这一节解决的就是 —— <b>怎么用算法找出「哪几级是一段」</b>，而不是靠眼睛。</p>
+
+<h4 id="np-20-1">20-1 三种切法，只有一种能用</h4>
+
+<p>拿到 20 个数想把它们分组，常见三种做法：</p>
+
+<table>
+<tr><th>做法</th><th>怎么分</th><th>能不能用</th></tr>
+<tr><td>KMeans 聚类</td><td>按数值相近分组</td><td><b>不能</b>：会把「第 3 级」和「第 18 级」分到一组，物理上毫无意义</td></tr>
+<tr><td>固定等分</td><td>每 5 级一段</td><td><b>不能</b>：先射箭再画靶，段数是你规定的，不是数据说的</td></tr>
+<tr><td><b>最优分段</b></td><td>段必须连续，段数由数据决定</td><td><b>能</b>：这就是本节要做的</td></tr>
+</table>
+
+<div class="bad box">
+<b>关键区别</b>：分段问题的「段」是连续的一段台阶，不是「数值相近的一堆数」。第 1–5 级和第 16–20 级数值可能一样，但中间隔着别的台阶，不可能算一段。
+</div>
+
+<h4 id="np-20-2">20-2 cost(i, j)：把一段压成一个数，误差有多少</h4>
+
+<p>一段台阶如果只用一个平均值代表，会有误差。误差定义为<b>离差平方和</b>（SS）：</p>
+
+$$\mathrm{cost}(i,j)=\sum_{m=i}^{j-1}\left(d_m-\bar d_{[i,j)}\right)^2$$
+
+<p>其中 $\bar d_{[i,j)}$ 是这一段自己的平均值，左闭右开：<code>cost(d, 0, 5)</code> 取下标 0,1,2,3,4，即第 1–5 级。</p>
+
+<p>手算一次（第 1–5 级：3,4,5,6,7）：</p>
+
+<table>
+<tr><th>步骤</th><th>结果</th></tr>
+<tr><td>平均值</td><td>5.0</td></tr>
+<tr><td>各数减均值</td><td>−2, −1, 0, 1, 2</td></tr>
+<tr><td>平方</td><td>4, 1, 0, 1, 4</td></tr>
+<tr><td>加起来</td><td><b>10.0</b></td></tr>
+</table>
+
+<p>三个验证点（写完函数先跑这个）：</p>
+
+<table>
+<tr><th>调用</th><th>应该输出</th><th>含义</th></tr>
+<tr><td><code>cost(d, 0, 5)</code></td><td>10.0</td><td>第 1–5 级</td></tr>
+<tr><td><code>cost(d, 5, 10)</code></td><td>2.8</td><td>第 6–10 级（这五级很齐）</td></tr>
+<tr><td><code>cost(d, 0, 20)</code></td><td>81.8</td><td>20 级全用一个大平均</td></tr>
+</table>
+
+<div class="warn box">
+<b>为什么用 SS 不用方差？</b>因为要比较不同长度的段。段 A 有 5 个数、SS=10（方差 2.5）；段 B 有 2 个数、SS=10（方差 10）。用方差比会误判 B 差 4 倍，用 SS 比两者一样。这里关心的是「整段一共偏了多少」，不是「平均每级偏多少」。副作用是 SS 偏向短段（少一个数就少一份误差），这正是 λ 要抵消的。
+</div>
+
+<h4 id="np-20-3">20-3 为什么不切 20 段：λ 的博弈</h4>
+
+<p>每段只用自己一个数，误差必然是 0 —— 切成 20 段「完美」，但等于没总结。所以给「切一刀」加罚款 $\lambda$：</p>
+
+$$\min\ \sum_{j=1}^{k}\mathrm{cost}(\text{第}j\text{段})+\lambda k$$
+
+<p>两项在打架：第一项希望多切（切得细误差小），第二项希望少切（每多一段罚 $\lambda$）。</p>
+
+<p>举个真实例子：第 1–5 级整体 cost=10。若切成 [3,4] 与 [5,6,7] 两段，cost 变成 0.5+2.0=2.5，<b>省下 7.5</b>，但要付 $\lambda=8$ 的罚款。<b>7.5 &lt; 8，不划算 → 不切</b>。这就是 λ=8 时这一段保持完整的原因。</p>
+
+<h4 id="np-20-4">20-4 DP：把 52 万种切法压到 2400 次运算</h4>
+
+<p>20 个数之间有 19 个缝，每个缝「切／不切」→ $2^{19}\approx52$ 万种切法，暴力枚举不可行。</p>
+
+<p><b>动态规划</b>的想法：固定「切几刀」，只问「切到第几个为止最优」。定义</p>
+
+$$\mathrm{dp}[k][j]=\text{前 } j \text{ 级切成 } k \text{ 段的最小总代价}$$
+
+<p>靠「最后一段」递推 —— 最后一段从 i 开始、到 j 结束，那么前面 i 个数的 $k-1$ 段已经是最优的：</p>
+
+$$\mathrm{dp}[k][j]=\min_{0\le i \lt j}\Big(\mathrm{dp}[k-1][i]+\mathrm{cost}(i,j)+\lambda\Big)$$
+
+<p>边界（这一步最容易错）：</p>
+
+<table>
+<tr><th>格子</th><th>值</th><th>为什么</th></tr>
+<tr><td><code>dp[0][0]</code></td><td>0</td><td>0 级切 0 段，代价 0</td></tr>
+<tr><td><code>dp[0][j]</code>, j&gt;0</td><td>∞</td><td>有台阶却一段不切，不可能</td></tr>
+<tr><td><code>dp[k][0]</code>, k&gt;0</td><td>∞</td><td>没台阶却要切 k 段，不可能</td></tr>
+</table>
+
+<pre><code>def cost(d, i, j):
+    """第 i 到第 j-1 级（下标，左闭右开）划成一段的平方误差和"""
+    seg = d[i:j]
+    return ((seg - seg.mean()) ** 2).sum()
+
+def dp_segments(d, lam, K_max=6):
+    n = len(d)
+    INF = float("inf")
+    dp = np.full((K_max + 1, n + 1), INF)          # dp[k][j]
+    back = np.zeros((K_max + 1, n + 1), dtype=int) # 最优解里最后一段的起点
+    dp[0][0] = 0.0
+
+    for k in range(1, K_max + 1):
+        for j in range(1, n + 1):
+            for i in range(0, j):
+                c = dp[k - 1][i] + cost(d, i, j) + lam
+                if c &lt; dp[k][j]:        # 严格小于才更新，别用 &lt;=
+                    dp[k][j] = c
+                    back[k][j] = i
+    return dp, back</code></pre>
+
+<h4 id="np-20-5">20-5 回溯：从表里读出分段</h4>
+
+<p>算完后在 <code>dp[1..K][n]</code> 里取最小值，对应的 k 就是最优段数，再用 <code>back</code> 从后往前倒推：</p>
+
+<pre><code>k_best = int(np.argmin(dp[1:, n])) + 1
+segs, j = [], n
+for k in range(k_best, 0, -1):
+    i = back[k][j]
+    segs.append((i, j))     # 左闭右开
+    j = i
+segs.reverse()</code></pre>
+
+<p>倒推出来是「从后往前」，最后要 <code>reverse()</code>。打印给人看时下标 +1（下标 0 对应第 1 级）。</p>
+
+<div class="ok box">
+<b>复杂度对比</b>：暴力 $2^{19}=524288$ 种切法；DP 是 $K\times n\times n=6\times20\times20=2400$ 次。数据越多差距越大 —— 100 级台阶时暴力是 $2^{99}$（天文数字），DP 只要 6 万次。
+</div>
+
+<h4 id="np-20-6">20-6 λ 扫描：段数不是拍脑袋定的</h4>
+
+<p>$\lambda$ 是超参数，不能凭感觉填。做法是扫描一串 λ，看段数怎么跳变：</p>
+
+<table>
+<tr><th>λ</th><th>最优段数</th><th>分段（级号）</th></tr>
+<tr><td>0.2</td><td>8</td><td>太碎，无意义</td></tr>
+<tr><td>2</td><td>5</td><td>1–2 / 3–5 / 6–10 / 11–15 / 16–20</td></tr>
+<tr><td>5</td><td>5</td><td>同上</td></tr>
+<tr><td><b>8</b></td><td><b>4</b></td><td><b>1–5 / 6–10 / 11–15 / 16–20</b></td></tr>
+<tr><td>10</td><td>3</td><td>1–5 / 6–10 / 11–20</td></tr>
+<tr><td>20</td><td>2</td><td>1–10 / 11–20</td></tr>
+</table>
+
+<p>取 $\lambda=8$，得 4 段，各段统计：</p>
+
+<table>
+<tr><th>段</th><th>级号</th><th>均值 (mm)</th><th>标准差</th></tr>
+<tr><td>1</td><td>1–5</td><td>5.00</td><td>1.58</td></tr>
+<tr><td>2</td><td>6–10</td><td><b>2.20</b></td><td>0.84</td></tr>
+<tr><td>3</td><td>11–15</td><td><b>7.20</b></td><td>0.84</td></tr>
+<tr><td>4</td><td>16–20</td><td>5.20</td><td>0.84</td></tr>
+</table>
+
+<div class="ok box">
+<b>结论可以直接写进论文</b>：第 6–10 级磨损最浅（均值 2.2 mm），第 11–15 级最深（均值 7.2 mm），相差约 3.3 倍；两端（1–5、16–20）约 5 mm，接近 20 级总平均（4.9 mm）。说明踏面磨损并非均匀分布，中间偏下那一段（11–15 级）是主要人流路径。
+</div>
+
+<h4 id="np-20-7">20-7 三个坑</h4>
+
+<div class="bad box">
+<b>① 用 KMeans 做「分段」</b>：KMeans 按数值聚类，会把第 3 级和第 18 级分到一起。分段必须是连续区间，这是和聚类最本质的区别。<br>
+<b>② 边界忘了置 ∞</b>：<code>dp</code> 初始化成全 0 时，程序会得到「每级一段、总代价 0」的假最优。<br>
+<b>③ 回溯时用 <code>&lt;=</code> 更新</b>：相等也覆盖会让 <code>back</code> 指向最后一次尝试的 i，导致回溯出的分段和 <code>dp</code> 里的代价对不上。只用严格小于。
+</div>
+
+<p>还有一个实操细节：<code>cost</code> 每调用一次要重算均值，DP 里会调用上千次。数据量大时改用前缀和（S 与 S²），单次 $O(1)$：</p>
+
+$$\mathrm{cost}(i,j)=\left(S_2[j]-S_2[i]\right)-\frac{\left(S[j]-S[i]\right)^2}{j-i}$$
+
+
 <h2 id="mcm">十一、MCM 十年真题手册怎么用</h2>
 <p>材料：<code>D:\Program Files\qq\MCM十年真题_方法与代码_论文技巧.html</code>（685 行、11 段代码、9 章）。它是一份"比赛当天手册"，价值在<b>广度</b>和<b>骨架</b>，不在推导。</p>
 

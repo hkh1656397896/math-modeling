@@ -82,13 +82,13 @@ def q5():
     """同一件事，向量化快多少？用 perf_counter 量一下（相对值即可）。"""
     import time
     t0 = time.perf_counter()
-    s1=0.0
+    s1 = 0.0
     for _ in range(200):
         s1 = sum(np.pi * A_MM * B_MM * x for x in W)
     t1 = time.perf_counter()
     w = np.array(W)
     t2 = time.perf_counter()
-    s2=0.0
+    s2 = 0.0
     for _ in range(200):
         s2 = (np.pi * A_MM * B_MM * w).sum()
     t3 = time.perf_counter()
